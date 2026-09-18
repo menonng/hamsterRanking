@@ -45,6 +45,9 @@ const els = {
   totalCount: document.getElementById("totalCount") as HTMLSpanElement,
   undoBtn: document.getElementById("undoBtn") as HTMLButtonElement,
 
+  manageList: document.getElementById("manageList") as HTMLDivElement,
+  manageEmpty: document.getElementById("manageEmpty") as HTMLParagraphElement,
+
   ghOwner: document.getElementById("ghOwner") as HTMLInputElement,
   ghRepo: document.getElementById("ghRepo") as HTMLInputElement,
   ghBranch: document.getElementById("ghBranch") as HTMLInputElement,
@@ -139,6 +142,34 @@ function renderRecent(): void {
     .join("");
 
   els.undoBtn.disabled = lastAddedIds.length === 0;
+  renderManageList();
+}
+
+function renderManageList(): void {
+  const sorted = sortRecords(records);
+  els.manageEmpty.style.display = sorted.length === 0 ? "block" : "none";
+
+  els.manageList.innerHTML = sorted
+    .map((r, i) => {
+      const aiTag = isAIRecord(r) ? `<span class="ai-badge">🤖 AI</span>` : "";
+      return `<div class="manage-row">
+        <span class="recent-name"><span class="recent-time">${i + 1}위</span> ${escapeHtml(r.name)}${aiTag}</span>
+        <span class="recent-meta">${escapeHtml(r.school)} ${escapeHtml(r.grade)} · ${r.time}초</span>
+        <button class="danger manage-delete" data-id="${r.id}" title="이 기록 삭제">삭제</button>
+      </div>`;
+    })
+    .join("");
+}
+
+function handleDelete(id: string): void {
+  const target = records.find((r) => r.id === id);
+  if (!target) return;
+  if (!confirm(`"${target.name}" (${target.time}초) 기록을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
+
+  records = records.filter((r) => r.id !== id);
+  lastAddedIds = lastAddedIds.filter((existingId) => existingId !== id);
+  renderRecent();
+  persistAndBroadcast();
 }
 
 function escapeHtml(s: string): string {
@@ -384,4 +415,12 @@ els.addBtn.addEventListener("click", handleAdd);
 els.undoBtn.addEventListener("click", handleUndo);
 els.inputArea.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAdd();
+});
+
+els.manageList.addEventListener("click", (e) => {
+  const target = e.target as HTMLElement;
+  if (target.matches(".manage-delete")) {
+    const id = target.dataset.id;
+    if (id) handleDelete(id);
+  }
 });

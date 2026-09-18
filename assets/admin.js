@@ -20,6 +20,8 @@ const els = {
     recentList: document.getElementById("recentList"),
     totalCount: document.getElementById("totalCount"),
     undoBtn: document.getElementById("undoBtn"),
+    manageList: document.getElementById("manageList"),
+    manageEmpty: document.getElementById("manageEmpty"),
     ghOwner: document.getElementById("ghOwner"),
     ghRepo: document.getElementById("ghRepo"),
     ghBranch: document.getElementById("ghBranch"),
@@ -102,6 +104,32 @@ function renderRecent() {
     })
         .join("");
     els.undoBtn.disabled = lastAddedIds.length === 0;
+    renderManageList();
+}
+function renderManageList() {
+    const sorted = sortRecords(records);
+    els.manageEmpty.style.display = sorted.length === 0 ? "block" : "none";
+    els.manageList.innerHTML = sorted
+        .map((r, i) => {
+        const aiTag = isAIRecord(r) ? `<span class="ai-badge">🤖 AI</span>` : "";
+        return `<div class="manage-row">
+        <span class="recent-name"><span class="recent-time">${i + 1}위</span> ${escapeHtml(r.name)}${aiTag}</span>
+        <span class="recent-meta">${escapeHtml(r.school)} ${escapeHtml(r.grade)} · ${r.time}초</span>
+        <button class="danger manage-delete" data-id="${r.id}" title="이 기록 삭제">삭제</button>
+      </div>`;
+    })
+        .join("");
+}
+function handleDelete(id) {
+    const target = records.find((r) => r.id === id);
+    if (!target)
+        return;
+    if (!confirm(`"${target.name}" (${target.time}초) 기록을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`))
+        return;
+    records = records.filter((r) => r.id !== id);
+    lastAddedIds = lastAddedIds.filter((existingId) => existingId !== id);
+    renderRecent();
+    persistAndBroadcast();
 }
 function escapeHtml(s) {
     return s.replace(/[&<>"']/g, (c) => ({
@@ -333,5 +361,13 @@ els.undoBtn.addEventListener("click", handleUndo);
 els.inputArea.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey))
         handleAdd();
+});
+els.manageList.addEventListener("click", (e) => {
+    const target = e.target;
+    if (target.matches(".manage-delete")) {
+        const id = target.dataset.id;
+        if (id)
+            handleDelete(id);
+    }
 });
 //# sourceMappingURL=admin.js.map

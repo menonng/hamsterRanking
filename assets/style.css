@@ -316,6 +316,45 @@ textarea { min-height: 96px; resize: vertical; }
 .recent-name { font-weight: 700; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .recent-meta { color: var(--text-dim); text-align: right; font-size: 12px; }
 
+.manage-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+.manage-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 13px;
+  align-items: center;
+}
+.manage-row:last-child { border-bottom: none; }
+.manage-row .recent-time { color: var(--text-dim); font-weight: 700; font-size: 12px; margin-right: 4px; }
+.manage-row .recent-name { font-weight: 700; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.manage-row .recent-meta { color: var(--text-dim); text-align: right; font-size: 12px; }
+.manage-delete { padding: 6px 12px; font-size: 12px; }
+
+@media (max-width: 640px) {
+  .recent-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "name name" "meta time";
+    row-gap: 4px;
+  }
+  .recent-row .recent-time { display: none; }
+  .recent-row .recent-name { grid-area: name; }
+  .recent-row .recent-meta { grid-area: meta; text-align: left; }
+
+  .manage-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "name del" "meta meta";
+    row-gap: 4px;
+  }
+  .manage-row .recent-name { grid-area: name; }
+  .manage-row .recent-meta { grid-area: meta; text-align: left; }
+  .manage-delete { grid-area: del; }
+}
+
 .status-ok { color: var(--color-green); }
 .status-warn { color: var(--color-yellow); }
 .status-fail { color: var(--color-red); }
