@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>🐹 햄스터봇 레이싱 랭킹</title>
+<link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <header class="top">
+    <h1>🐹 햄스터봇 레이싱 랭킹</h1>
+    <div class="status-line">
+      <span><span id="liveDot" class="live-dot"></span>실시간 연동</span>
+      <span>참가 <strong id="totalCount">0</strong>명</span>
+      <span>업데이트 <span id="lastSync">-</span></span>
+    </div>
+  </header>
+
+  <main>
+    <div class="fold">
+      <section class="card" aria-label="1위부터 3위">
+        <h2>🏆 시상대</h2>
+        <div id="podium" class="podium"></div>
+      </section>
+
+      <section class="card" aria-label="4위부터 10위">
+        <h2>4위 ~ 10위</h2>
+        <div id="midList"></div>
+      </section>
+    </div>
+
+    <section id="restSection" class="card" style="display:none; margin-top:20px;" aria-label="11위 이하">
+      <h2>11위 이하</h2>
+      <div id="restList"></div>
+    </section>
+
+    <div id="emptyState" class="empty-state">
+      <div class="big">🐹</div>
+      <div>아직 기록이 없습니다. 첫 번째 도전자가 되어보세요!</div>
+    </div>
+  </main>
+
+  <script type="module" src="./assets/ranking.js"></script>
+</body>
+</html>
