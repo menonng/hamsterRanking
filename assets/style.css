@@ -8,6 +8,25 @@
   --color-purple: #660099;
   --color-pink: #FFB4CC;
 
+  --medal-gold: #FFCC11;
+  --medal-silver: #B9BFD6;
+  --medal-bronze: #C97B3D;
+
+  /* 기본(라이트) 모드 */
+  --bg: #F3F4FA;
+  --bg-soft: #FFFFFF;
+  --card: #FFFFFF;
+  --card-border: #E1E3F0;
+  --text: #1B1D2E;
+  --text-dim: #666B8F;
+  --neutral-badge: #DDE0F0;
+  --header-bg: rgba(255, 255, 255, 0.85);
+  --shadow-tint: 0 8px 24px -14px rgba(30, 33, 72, 0.25);
+
+  --radius: 18px;
+}
+
+:root[data-theme="dark"] {
   --bg: #0E1026;
   --bg-soft: #171A3A;
   --card: #1E2148;
@@ -15,8 +34,8 @@
   --text: #F4F5FB;
   --text-dim: #A9ADD6;
   --neutral-badge: #4A4E86;
-
-  --radius: 18px;
+  --header-bg: rgba(14, 16, 38, 0.9);
+  --shadow-tint: 0 8px 24px -12px rgba(0, 0, 0, 0.5);
 }
 
 * { box-sizing: border-box; }
@@ -28,6 +47,7 @@ html, body {
   color: var(--text);
   font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color .3s ease, color .3s ease;
 }
 
 body {
@@ -52,7 +72,7 @@ header.top {
   border-bottom: 1px solid var(--card-border);
   position: sticky;
   top: 0;
-  background: rgba(14, 16, 38, 0.9);
+  background: var(--header-bg);
   backdrop-filter: blur(8px);
   z-index: 10;
 }
@@ -65,6 +85,13 @@ header.top h1 {
   gap: 8px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .status-line {
   display: flex;
   align-items: center;
@@ -73,6 +100,40 @@ header.top h1 {
   color: var(--text-dim);
   flex-wrap: wrap;
 }
+
+.theme-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  line-height: 0;
+  flex-shrink: 0;
+}
+.toggle-track {
+  display: flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  background: var(--card-border);
+  border-radius: 999px;
+  padding: 2px;
+  transition: background .25s ease;
+}
+.toggle-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transform: translateX(0);
+  transition: transform .25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
+html[data-theme="dark"] .toggle-track { background: var(--color-blue); }
+html[data-theme="dark"] .toggle-thumb { transform: translateX(20px); }
 
 .live-dot {
   width: 10px;
@@ -123,30 +184,36 @@ section.card {
   align-items: flex-end;
   justify-content: center;
   gap: clamp(6px, 2vw, 20px);
-  padding: 10px 0 4px;
+  padding: 10px 0 0;
 }
 
 .podium-card {
-  --accent: var(--color-yellow);
+  --accent: var(--medal-gold);
   flex: 1 1 0;
   min-width: 0;
   max-width: 240px;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 22%, var(--card)), var(--card) 70%);
-  border: 1.5px solid var(--accent);
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-top: 4px solid var(--accent);
   border-radius: clamp(10px, 2.5vw, 16px);
-  padding: clamp(10px, 3vw, 18px) clamp(6px, 2vw, 14px) clamp(12px, 3vw, 20px);
+  display: flex;
+  flex-direction: column;
   text-align: center;
   position: relative;
-  box-shadow: 0 8px 24px -12px color-mix(in srgb, var(--accent) 60%, transparent);
+  overflow: hidden;
+  box-shadow: var(--shadow-tint);
   opacity: 1;
 }
 
-.podium-card.rank-1 { order: 2; transform: translateY(clamp(-14px, -3vw, -6px)) scale(1.06); z-index: 2; }
+.podium-card.rank-1 { order: 2; z-index: 2; }
 .podium-card.rank-2 { order: 1; }
 .podium-card.rank-3 { order: 3; }
 
+.podium-top {
+  padding: clamp(10px, 3vw, 18px) clamp(6px, 2vw, 14px) clamp(8px, 2vw, 12px);
+}
+
 .medal { font-size: clamp(20px, 6vw, 34px); line-height: 1; margin-bottom: 4px; }
-.podium-rank { font-size: clamp(10px, 2.6vw, 12px); color: var(--text-dim); font-weight: 700; letter-spacing: 0.04em; }
 .podium-name {
   font-size: clamp(12px, 3.4vw, 18px);
   font-weight: 800;
@@ -166,7 +233,22 @@ section.card {
   overflow-wrap: break-word;
   word-break: keep-all;
 }
-.podium-time { font-size: clamp(15px, 5.2vw, 26px); font-weight: 900; color: var(--accent); margin-top: clamp(4px, 2vw, 10px); }
+.podium-time { font-size: clamp(15px, 5.2vw, 26px); font-weight: 900; color: var(--text); margin-top: clamp(4px, 2vw, 10px); }
+
+.podium-step {
+  margin-top: auto;
+  width: 100%;
+  background: var(--accent);
+  color: rgba(0, 0, 0, .55);
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(20px, 6.5vw, 32px);
+}
+.podium-card.rank-1 .podium-step { height: clamp(64px, 16vw, 100px); }
+.podium-card.rank-2 .podium-step { height: clamp(46px, 12vw, 72px); }
+.podium-card.rank-3 .podium-step { height: clamp(34px, 9vw, 56px); }
 
 /* ---------- 4~10위 / 11위 이하 리스트 ---------- */
 
@@ -229,12 +311,33 @@ section.card {
   from { opacity: 0; transform: translateY(22px) scale(0.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.podium-card.enter { animation: popIn 0.5s cubic-bezier(.2,.8,.3,1.2) backwards; }
-.podium-card.rank-1.enter { animation-delay: 0.16s; }
-.podium-card.rank-2.enter { animation-delay: 0.06s; }
-.podium-card.rank-3.enter { animation-delay: 0.26s; }
-
 .row.enter { animation: popIn 0.4s ease-out backwards; }
+
+/* 1~3위 변동 시: 기존 시상대가 사라졌다가(vanish) 새 시상대가 위에서 떨어져 내려온다(drop) */
+@keyframes podiumVanish {
+  to { opacity: 0; transform: scale(0.85) translateY(-10px); }
+}
+.podium.vanish .podium-card { animation: podiumVanish 0.22s ease-in forwards; }
+
+@keyframes podiumDrop {
+  0%   { opacity: 0; transform: translateY(-160%); }
+  55%  { opacity: 1; transform: translateY(6%); }
+  75%  { transform: translateY(-3%); }
+  100% { transform: translateY(0); }
+}
+.podium-card.drop { animation: podiumDrop 0.6s cubic-bezier(.34, 1.56, .64, 1) backwards; }
+.podium-card.rank-2.drop { animation-delay: 0s; }
+.podium-card.rank-1.drop { animation-delay: 0.08s; }
+.podium-card.rank-3.drop { animation-delay: 0.16s; }
+
+@keyframes impactShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.podium.impact { animation: impactShake 0.3s ease-out; }
 
 /* ---------- 모바일 ---------- */
 
