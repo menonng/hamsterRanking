@@ -122,34 +122,52 @@ section.card {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: clamp(8px, 2vw, 20px);
+  gap: clamp(6px, 2vw, 20px);
   padding: 10px 0 4px;
 }
 
 .podium-card {
   --accent: var(--color-yellow);
   flex: 1 1 0;
+  min-width: 0;
   max-width: 240px;
   background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 22%, var(--card)), var(--card) 70%);
   border: 1.5px solid var(--accent);
-  border-radius: 16px;
-  padding: 18px 14px 20px;
+  border-radius: clamp(10px, 2.5vw, 16px);
+  padding: clamp(10px, 3vw, 18px) clamp(6px, 2vw, 14px) clamp(12px, 3vw, 20px);
   text-align: center;
   position: relative;
   box-shadow: 0 8px 24px -12px color-mix(in srgb, var(--accent) 60%, transparent);
   opacity: 1;
 }
 
-.podium-card.rank-1 { order: 2; transform: translateY(-14px) scale(1.06); z-index: 2; }
+.podium-card.rank-1 { order: 2; transform: translateY(clamp(-14px, -3vw, -6px)) scale(1.06); z-index: 2; }
 .podium-card.rank-2 { order: 1; }
 .podium-card.rank-3 { order: 3; }
 
-.medal { font-size: 34px; line-height: 1; margin-bottom: 4px; }
-.podium-rank { font-size: 12px; color: var(--text-dim); font-weight: 700; letter-spacing: 0.06em; }
-.podium-name { font-size: 18px; font-weight: 800; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
-.podium-meta { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
-.podium-time { font-size: 26px; font-weight: 900; color: var(--accent); margin-top: 10px; }
-.podium-time .unit { font-size: 13px; font-weight: 600; margin-left: 2px; color: var(--text-dim); }
+.medal { font-size: clamp(20px, 6vw, 34px); line-height: 1; margin-bottom: 4px; }
+.podium-rank { font-size: clamp(10px, 2.6vw, 12px); color: var(--text-dim); font-weight: 700; letter-spacing: 0.04em; }
+.podium-name {
+  font-size: clamp(12px, 3.4vw, 18px);
+  font-weight: 800;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+.podium-meta {
+  font-size: clamp(9px, 2.4vw, 12px);
+  color: var(--text-dim);
+  margin-top: 4px;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+.podium-time { font-size: clamp(15px, 5.2vw, 26px); font-weight: 900; color: var(--accent); margin-top: clamp(4px, 2vw, 10px); }
+.podium-time .unit { font-size: clamp(9px, 2.4vw, 13px); font-weight: 600; margin-left: 2px; color: var(--text-dim); }
 
 /* ---------- 4~10위 / 11위 이하 리스트 ---------- */
 
@@ -222,11 +240,7 @@ section.card {
 /* ---------- 모바일 ---------- */
 
 @media (max-width: 640px) {
-  .podium { flex-direction: column; align-items: stretch; }
   .podium-card { max-width: none; }
-  .podium-card.rank-1 { order: 1; transform: none; }
-  .podium-card.rank-2 { order: 2; }
-  .podium-card.rank-3 { order: 3; }
 
   .row { grid-template-columns: 26px 1fr; grid-template-areas: "rank name" "rank meta"; row-gap: 2px; }
   .row-rank { grid-area: rank; width: 26px; height: 26px; font-size: 12px; }
