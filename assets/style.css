@@ -344,11 +344,11 @@ section.card {
 @media (max-width: 640px) {
   .podium-card { max-width: none; }
 
-  .row { grid-template-columns: 26px 1fr; grid-template-areas: "rank name" "rank meta"; row-gap: 2px; }
+  .row { grid-template-columns: 26px 1fr auto; grid-template-areas: "rank name time" "rank meta meta"; row-gap: 2px; }
   .row-rank { grid-area: rank; width: 26px; height: 26px; font-size: 12px; }
-  .row-name { grid-area: name; }
+  .row-name { grid-area: name; min-width: 0; }
   .row-meta { grid-area: meta; text-align: left; }
-  .row-time { grid-column: 2; text-align: left; font-size: 13px; }
+  .row-time { grid-area: time; text-align: right; font-size: 13px; }
 
   .fold { min-height: auto; }
 }
