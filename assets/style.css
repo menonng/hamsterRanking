@@ -167,7 +167,6 @@ section.card {
   word-break: keep-all;
 }
 .podium-time { font-size: clamp(15px, 5.2vw, 26px); font-weight: 900; color: var(--accent); margin-top: clamp(4px, 2vw, 10px); }
-.podium-time .unit { font-size: clamp(9px, 2.4vw, 13px); font-weight: 600; margin-left: 2px; color: var(--text-dim); }
 
 /* ---------- 4~10위 / 11위 이하 리스트 ---------- */
 

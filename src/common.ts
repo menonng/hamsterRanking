@@ -50,8 +50,17 @@ export function isAIRecord(record: Pick<RankRecord, "tag">): boolean {
   return record.tag.trim() === "1";
 }
 
-export function formatTime(time: number): string {
-  return Number.isInteger(time) ? `${time}` : time.toFixed(2);
+function trimTrailingZeros(fixed: string): string {
+  return fixed.includes(".") ? fixed.replace(/0+$/, "").replace(/\.$/, "") : fixed;
+}
+
+/** 초 단위(밀리초까지) 입력을 "M분 S.SS초"(1분 미만이면 "S.SS초") 형태로 표시한다. */
+export function formatTime(totalSeconds: number): string {
+  const rounded = Math.round(totalSeconds * 1000) / 1000;
+  const minutes = Math.floor(rounded / 60);
+  const secs = rounded - minutes * 60;
+  const secsStr = trimTrailingZeros(secs.toFixed(3));
+  return minutes > 0 ? `${minutes}분 ${secsStr}초` : `${secsStr}초`;
 }
 
 export function uid(): string {
@@ -103,7 +112,7 @@ export function saveLocalRecords(records: RankRecord[]): void {
 
 export function toTxtLine(r: RankRecord): string {
   const tagLabel = isAIRecord(r) ? "AI" : "사람";
-  return `${r.createdAt} | ${r.school} | ${r.grade} | ${r.age} | ${r.name} | ${formatTime(r.time)}초 | ${tagLabel}`;
+  return `${r.createdAt} | ${r.school} | ${r.grade} | ${r.age} | ${r.name} | ${formatTime(r.time)} | ${tagLabel}`;
 }
 
 export function recordsToTxt(records: RankRecord[]): string {

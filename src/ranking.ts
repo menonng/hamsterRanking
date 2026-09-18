@@ -59,7 +59,7 @@ function podiumCard(r: RankRecord, rank: number, isNew: boolean): string {
       <div class="podium-rank">${rank}위</div>
       <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
       <div class="podium-meta">${escapeHtml(metaLine(r))}</div>
-      <div class="podium-time">${formatTime(r.time)}<span class="unit">초</span></div>
+      <div class="podium-time">${formatTime(r.time)}</div>
     </div>`;
 }
 
@@ -71,7 +71,7 @@ function listRow(r: RankRecord, rank: number, isNew: boolean, colored: boolean):
       <span class="row-rank">${rank}</span>
       <span class="row-name">${escapeHtml(r.name)}${aiBadge(r)}</span>
       <span class="row-meta">${escapeHtml(metaLine(r))}</span>
-      <span class="row-time">${formatTime(r.time)}초</span>
+      <span class="row-time">${formatTime(r.time)}</span>
     </div>`;
 }
 
