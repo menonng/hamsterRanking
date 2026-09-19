@@ -1,7 +1,13 @@
 // 공개 랭킹 화면 — GitHub Pages로 열람하는 모든 사람이 보는 읽기 전용 화면.
 import { BROADCAST_CHANNEL_NAME, formatTime, isAIRecord, loadLocalRecords, mergeRecords, sortRecords, } from "./common.js";
-const DATA_URL = "./data/records.json";
-const POLL_INTERVAL_MS = 8000;
+// GitHub Pages 자체 배포(빌드+CDN 전파)는 최악의 경우 1분 이상 걸릴 수 있어, 배포를
+// 기다리지 않고 커밋 직후 거의 바로 갱신되는 raw.githubusercontent.com을 우선 사용한다.
+const GH_OWNER = "menonng";
+const GH_REPO = "hamsterranking";
+const GH_BRANCH = "claude/gracious-sagan-mzkdnd";
+const RAW_DATA_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/data/records.json`;
+const FALLBACK_DATA_URL = "./data/records.json";
+const POLL_INTERVAL_MS = 4000;
 const PALETTE = [
     "#FF0045",
     "#FF7E00",
@@ -167,19 +173,32 @@ function getCombined() {
     const local = loadLocalRecords();
     return mergeRecords(remoteRecords, local);
 }
+async function fetchJson(url) {
+    const res = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok)
+        throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : null;
+}
 async function fetchRemote() {
     try {
-        const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: "no-store" });
-        if (!res.ok)
-            throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
+        const data = (await fetchJson(RAW_DATA_URL)) ?? (await fetchJson(FALLBACK_DATA_URL));
+        if (data) {
             remoteRecords = data;
             setLive(true);
         }
     }
     catch {
-        setLive(false);
+        try {
+            const data = await fetchJson(FALLBACK_DATA_URL);
+            if (data) {
+                remoteRecords = data;
+                setLive(true);
+            }
+        }
+        catch {
+            setLive(false);
+        }
     }
     render(getCombined());
     els.lastSync.textContent = new Date().toLocaleTimeString("ko-KR");
