@@ -374,9 +374,12 @@ function setLive(ok: boolean): void {
 function startPolling(): void {
   fetchRemote();
   setInterval(fetchRemote, POLL_INTERVAL_MS);
+  // 브라우저는 백그라운드 탭/창의 타이머를 강제로 느리게 만든다(배터리 절약 정책).
+  // 이 화면이 다시 보이거나 포커스를 받는 순간만큼은 그 지연과 무관하게 즉시 최신화한다.
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") fetchRemote();
   });
+  window.addEventListener("focus", () => fetchRemote());
 }
 
 function listenLocalUpdates(): void {
