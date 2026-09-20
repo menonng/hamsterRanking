@@ -75,7 +75,7 @@ function podiumCard(r, rank, dropDelayClass) {
     const color = MEDAL_COLORS[rank - 1];
     const cls = `podium-card rank-${rank}${dropDelayClass ? " drop" : ""}`;
     return `
-    <div class="${cls}" style="--accent:${color}" data-id="${r.id}">
+    <div class="${cls}" style="--accent:${color}" data-id="${r.id}" data-rank="${rank}">
       <div class="podium-top">
         <div class="medal">${MEDALS[rank - 1]}</div>
         <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
@@ -188,7 +188,7 @@ async function renderPodium(top3) {
         previousTop3Ids = newTop3Ids;
         return;
     }
-    const existingCards = Array.from(els.podium.querySelectorAll(".podium-card"));
+    const priorTop3Ids = previousTop3Ids;
     previousTop3Ids = newTop3Ids;
     if (podiumAnimating) {
         // 이미 애니메이션 중이면 굳이 겹쳐서 재생하지 않고 최신 상태로 스냅.
@@ -196,13 +196,40 @@ async function renderPodium(top3) {
         els.podium.innerHTML = top3.map((r, i) => podiumCard(r, i + 1, false)).join("");
         return;
     }
+    const existingCardsByRank = new Map();
+    els.podium.querySelectorAll(".podium-card").forEach((c) => {
+        const rank = Number(c.dataset.rank);
+        if (rank)
+            existingCardsByRank.set(rank, c);
+    });
+    // 자리별로(1/2/3위) 실제로 사람이 바뀐 곳만 골라낸다 — 그대로인 자리는 손대지 않는다.
+    const changedRanks = [];
+    for (let i = 0; i < Math.max(top3.length, priorTop3Ids.length); i++) {
+        if (top3[i]?.id !== priorTop3Ids[i])
+            changedRanks.push(i + 1);
+    }
+    if (changedRanks.length === 0)
+        return;
     podiumAnimating = true;
     try {
-        if (existingCards.length > 0) {
+        const cardsToShatter = changedRanks
+            .map((rank) => existingCardsByRank.get(rank))
+            .filter((c) => !!c);
+        if (cardsToShatter.length > 0) {
             await delay(ROW_FLIP_MS);
-            await Promise.all(existingCards.map((c) => spawnShatter(c)));
+            await Promise.all(cardsToShatter.map((c) => spawnShatter(c)));
         }
-        els.podium.innerHTML = top3.map((r, i) => podiumCard(r, i + 1, true)).join("");
+        cardsToShatter.forEach((c) => c.remove());
+        // 바뀐 자리만 새 카드로 교체해 붙인다 (그대로인 자리는 기존 DOM을 그대로 유지).
+        for (const rank of changedRanks) {
+            const record = top3[rank - 1];
+            if (!record)
+                continue; // 인원이 줄어 그 자리가 아예 없어진 경우
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = podiumCard(record, rank, true).trim();
+            const newCard = wrapper.firstElementChild;
+            els.podium.appendChild(newCard);
+        }
         await delay(PODIUM_DROP_MS);
         spawnDebris(els.podium);
         els.podium.classList.add("impact");
