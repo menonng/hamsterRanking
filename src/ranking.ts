@@ -35,7 +35,7 @@ const ROW_FLIP_MS = 500;
 const SHATTER_MS = 560;
 const PODIUM_DROP_MS = 600 + 160; // 애니메이션 길이 + 3위 stagger 지연
 const IMPACT_MS = 320;
-const STEP_GAP_MS = 200; // 여러 건이 한번에 들어왔을 때 각 항목 반영 사이의 여백
+const STEP_INTERVAL_MS = 5000; // 여러 건이 한번에 들어왔을 때 각 항목 연출 "시작" 사이의 간격
 const THEME_KEY = "hamsterRanking_theme";
 
 // 깨지는 조각 모양(크랙 패턴으로 카드를 쪼갠 폴리곤들)과 각 조각이 튕겨나갈 대략적 방향.
@@ -312,11 +312,16 @@ async function render(all: RankRecord[]): Promise<void> {
       const rankOf = new Map(sorted.map((r, i) => [r.id, i]));
       const orderedNew = [...newRecords].sort((a, b) => rankOf.get(a.id)! - rankOf.get(b.id)!);
 
+      // 각 항목의 연출이 "시작"된 시점부터 STEP_INTERVAL_MS가 지나야 다음 항목을
+      // 시작한다 — 연출 자체는 이보다 짧게 끝나지만(줄 스왑/시상대 파괴+낙하),
+      // 남는 시간만큼 그대로 두어 한꺼번에 몰아치는 느낌 없이 또렷하게 하나씩 보이게 한다.
       let working = sorted.filter((r) => previousIds.has(r.id));
       for (const record of orderedNew) {
         working = sortRecords([...working, record]);
+        const startedAt = Date.now();
         await applyState(working);
-        await delay(STEP_GAP_MS);
+        const elapsed = Date.now() - startedAt;
+        await delay(Math.max(0, STEP_INTERVAL_MS - elapsed));
       }
     }
   } finally {
