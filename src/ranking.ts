@@ -345,15 +345,19 @@ async function fetchJson(url: string): Promise<RankRecord[] | null> {
 }
 
 async function fetchRemote(): Promise<void> {
+  // raw.githubusercontent.com은 CDN 캐시가 쿼리스트링을 무시하고 최대 5분간 그대로
+  // 응답해버려서(no-cache 요청 헤더도 무시됨) "실시간"에는 못 쓴다. 이 저장소의 GitHub
+  // Pages 배포본(우리가 직접 트리거하는 배포 시점만큼만 뒤처짐)을 1차로 쓰고,
+  // 그마저 안 될 때만 raw를 예비로 시도한다.
   try {
-    const data = (await fetchJson(RAW_DATA_URL)) ?? (await fetchJson(FALLBACK_DATA_URL));
+    const data = await fetchJson(FALLBACK_DATA_URL);
     if (data) {
       remoteRecords = data;
       setLive(true);
     }
   } catch {
     try {
-      const data = await fetchJson(FALLBACK_DATA_URL);
+      const data = await fetchJson(RAW_DATA_URL);
       if (data) {
         remoteRecords = data;
         setLive(true);
