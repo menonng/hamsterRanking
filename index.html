@@ -8,12 +8,15 @@
 </head>
 <body>
   <header class="top">
-    <h1>🐹 햄스터봇 레이싱 랭킹</h1>
+    <div class="brand">
+      <span class="brand-badge">🐹</span>
+      <h1>햄스터봇 레이싱 랭킹</h1>
+    </div>
     <div class="header-right">
       <div class="status-line">
-        <span><span id="liveDot" class="live-dot"></span>실시간 연동</span>
-        <span>참가 <strong id="totalCount">0</strong>명</span>
-        <span>업데이트 <span id="lastSync">-</span></span>
+        <span class="status-pill"><span id="liveDot" class="live-dot"></span>실시간 연동</span>
+        <span class="status-pill">참가 <strong id="totalCount">0</strong>명</span>
+        <span class="status-pill">업데이트 <span id="lastSync">-</span></span>
       </div>
       <button id="themeToggle" class="theme-toggle" type="button" aria-label="다크 모드 전환">
         <span class="toggle-track"><span class="toggle-thumb">☀️</span></span>
@@ -23,19 +26,19 @@
 
   <main>
     <div class="fold">
-      <section class="card" aria-label="1위부터 3위">
-        <h2>🏆 1위 ~ 3위</h2>
+      <section class="card podium-section" aria-label="1위부터 3위">
+        <h2><span class="h2-icon icon-gold">🏆</span>1위 ~ 3위</h2>
         <div id="podium" class="podium"></div>
       </section>
 
       <section class="card" aria-label="4위부터 10위">
-        <h2>4위 ~ 10위</h2>
+        <h2><span class="h2-icon icon-mid">🎖️</span>4위 ~ 10위</h2>
         <div id="midList"></div>
       </section>
     </div>
 
     <section id="restSection" class="card" style="display:none; margin-top:20px;" aria-label="11위 이하">
-      <h2>11위 이하</h2>
+      <h2><span class="h2-icon icon-rest">📋</span>11위 이하</h2>
       <div id="restList"></div>
     </section>
 
