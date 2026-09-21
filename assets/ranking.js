@@ -1,5 +1,5 @@
 // 공개 랭킹 화면 — GitHub Pages로 열람하는 모든 사람이 보는 읽기 전용 화면.
-import { BROADCAST_CHANNEL_NAME, formatTime, isAIRecord, loadLocalRecords, mergeRecords, sortRecords, } from "./common.js";
+import { BROADCAST_CHANNEL_NAME, formatGap, formatTime, isAIRecord, loadLocalRecords, mergeRecords, sortRecords, } from "./common.js";
 // GitHub Pages 자체 배포(빌드+CDN 전파)는 최악의 경우 1분 이상 걸릴 수 있어, 배포를
 // 기다리지 않고 커밋 직후 거의 바로 갱신되는 raw.githubusercontent.com을 우선 사용한다.
 const GH_OWNER = "menonng";
@@ -71,9 +71,10 @@ function metaLine(r) {
     const bits = [r.school, r.grade ? `${r.grade}학년` : "", r.age ? `${r.age}세` : ""].filter(Boolean);
     return bits.join(" · ") || "-";
 }
-function podiumCard(r, rank, dropDelayClass) {
+function podiumCard(r, rank, dropDelayClass, leaderTime) {
     const color = MEDAL_COLORS[rank - 1];
     const cls = `podium-card rank-${rank}${dropDelayClass ? " drop" : ""}`;
+    const gap = rank > 1 ? `<div class="podium-gap">${formatGap(r.time - leaderTime)}</div>` : "";
     return `
     <div class="${cls}" style="--accent:${color}" data-id="${r.id}" data-rank="${rank}">
       <div class="podium-top">
@@ -81,11 +82,12 @@ function podiumCard(r, rank, dropDelayClass) {
         <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
         <div class="podium-meta">${escapeHtml(metaLine(r))}</div>
         <div class="podium-time">${formatTime(r.time)}</div>
+        ${gap}
       </div>
       <div class="podium-step">${rank}</div>
     </div>`;
 }
-function listRow(r, rank, isNew, colored) {
+function listRow(r, rank, isNew, colored, leaderTime) {
     const color = colored ? PALETTE[(rank - 1) % PALETTE.length] : "var(--neutral-badge)";
     const cls = `row${isNew ? " enter" : ""}`;
     return `
@@ -93,7 +95,10 @@ function listRow(r, rank, isNew, colored) {
       <span class="row-rank">${rank}</span>
       <span class="row-name">${escapeHtml(r.name)}${aiBadge(r)}</span>
       <span class="row-meta">${escapeHtml(metaLine(r))}</span>
-      <span class="row-time">${formatTime(r.time)}</span>
+      <span class="row-time-wrap">
+        <span class="row-time">${formatTime(r.time)}</span>
+        <span class="row-gap">${formatGap(r.time - leaderTime)}</span>
+      </span>
     </div>`;
 }
 function escapeHtml(s) {
@@ -151,6 +156,8 @@ function captureRects(container) {
 }
 /** FLIP 기법: 이전 위치와 새 위치의 차이만큼 역방향으로 즉시 이동시킨 뒤, 트랜지션으로 제자리로 슬라이드시킨다. */
 function playFlip(container, previousRects) {
+    if (prefersReducedMotion())
+        return;
     container.querySelectorAll("[data-id]").forEach((el) => {
         const id = el.dataset.id;
         const prev = previousRects.get(id);
@@ -163,7 +170,7 @@ function playFlip(container, previousRects) {
         el.style.transition = "none";
         el.style.transform = `translateY(${deltaY}px)`;
         requestAnimationFrame(() => {
-            el.style.transition = `transform ${ROW_FLIP_MS}ms cubic-bezier(.2,.7,.3,1)`;
+            el.style.transition = `transform ${ROW_FLIP_MS}ms cubic-bezier(0.23, 1, 0.32, 1)`;
             el.style.transform = "";
         });
     });
@@ -173,13 +180,17 @@ function renderRowLists(sorted) {
     const previousRects = new Map();
     for (const c of rowContainers)
         captureRects(c).forEach((rect, id) => previousRects.set(id, rect));
+    const leaderTime = sorted[0]?.time ?? 0;
     const mid = sorted.slice(3, 10);
     const rest = sorted.slice(10);
-    els.midList.innerHTML = mid.map((r, i) => listRow(r, i + 4, !previousIds.has(r.id), true)).join("");
+    els.midList.innerHTML = mid.map((r, i) => listRow(r, i + 4, !previousIds.has(r.id), true, leaderTime)).join("");
     els.restSection.style.display = rest.length > 0 ? "block" : "none";
-    els.restList.innerHTML = rest.map((r, i) => listRow(r, i + 11, !previousIds.has(r.id), false)).join("");
+    els.restList.innerHTML = rest.map((r, i) => listRow(r, i + 11, !previousIds.has(r.id), false, leaderTime)).join("");
     for (const c of rowContainers)
         playFlip(c, previousRects);
+}
+function prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 async function renderPodium(top3) {
     const newTop3Ids = top3.map((r) => r.id);
@@ -190,10 +201,11 @@ async function renderPodium(top3) {
     }
     const priorTop3Ids = previousTop3Ids;
     previousTop3Ids = newTop3Ids;
-    if (podiumAnimating) {
-        // 이미 애니메이션 중이면 굳이 겹쳐서 재생하지 않고 최신 상태로 스냅.
+    const leaderTime = top3[0]?.time ?? 0;
+    if (podiumAnimating || prefersReducedMotion()) {
+        // 이미 애니메이션 중이거나 모션 감소 선호 시엔 겹쳐서 재생하지 않고 최신 상태로 스냅.
         els.podium.classList.remove("impact");
-        els.podium.innerHTML = top3.map((r, i) => podiumCard(r, i + 1, false)).join("");
+        els.podium.innerHTML = top3.map((r, i) => podiumCard(r, i + 1, false, leaderTime)).join("");
         return;
     }
     const existingCardsByRank = new Map();
@@ -226,7 +238,7 @@ async function renderPodium(top3) {
             if (!record)
                 continue; // 인원이 줄어 그 자리가 아예 없어진 경우
             const wrapper = document.createElement("div");
-            wrapper.innerHTML = podiumCard(record, rank, true).trim();
+            wrapper.innerHTML = podiumCard(record, rank, true, leaderTime).trim();
             const newCard = wrapper.firstElementChild;
             els.podium.appendChild(newCard);
         }

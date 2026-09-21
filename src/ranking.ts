@@ -3,6 +3,7 @@ import {
   RankRecord,
   BROADCAST_CHANNEL_NAME,
   SyncMessage,
+  formatGap,
   formatTime,
   isAIRecord,
   loadLocalRecords,
@@ -88,9 +89,10 @@ function metaLine(r: RankRecord): string {
   return bits.join(" · ") || "-";
 }
 
-function podiumCard(r: RankRecord, rank: number, dropDelayClass: boolean): string {
+function podiumCard(r: RankRecord, rank: number, dropDelayClass: boolean, leaderTime: number): string {
   const color = MEDAL_COLORS[rank - 1];
   const cls = `podium-card rank-${rank}${dropDelayClass ? " drop" : ""}`;
+  const gap = rank > 1 ? `<div class="podium-gap">${formatGap(r.time - leaderTime)}</div>` : "";
   return `
     <div class="${cls}" style="--accent:${color}" data-id="${r.id}" data-rank="${rank}">
       <div class="podium-top">
@@ -98,12 +100,13 @@ function podiumCard(r: RankRecord, rank: number, dropDelayClass: boolean): strin
         <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
         <div class="podium-meta">${escapeHtml(metaLine(r))}</div>
         <div class="podium-time">${formatTime(r.time)}</div>
+        ${gap}
       </div>
       <div class="podium-step">${rank}</div>
     </div>`;
 }
 
-function listRow(r: RankRecord, rank: number, isNew: boolean, colored: boolean): string {
+function listRow(r: RankRecord, rank: number, isNew: boolean, colored: boolean, leaderTime: number): string {
   const color = colored ? PALETTE[(rank - 1) % PALETTE.length] : "var(--neutral-badge)";
   const cls = `row${isNew ? " enter" : ""}`;
   return `
@@ -111,7 +114,10 @@ function listRow(r: RankRecord, rank: number, isNew: boolean, colored: boolean):
       <span class="row-rank">${rank}</span>
       <span class="row-name">${escapeHtml(r.name)}${aiBadge(r)}</span>
       <span class="row-meta">${escapeHtml(metaLine(r))}</span>
-      <span class="row-time">${formatTime(r.time)}</span>
+      <span class="row-time-wrap">
+        <span class="row-time">${formatTime(r.time)}</span>
+        <span class="row-gap">${formatGap(r.time - leaderTime)}</span>
+      </span>
     </div>`;
 }
 
@@ -175,6 +181,7 @@ function captureRects(container: HTMLElement): Map<string, DOMRect> {
 
 /** FLIP 기법: 이전 위치와 새 위치의 차이만큼 역방향으로 즉시 이동시킨 뒤, 트랜지션으로 제자리로 슬라이드시킨다. */
 function playFlip(container: HTMLElement, previousRects: Map<string, DOMRect>): void {
+  if (prefersReducedMotion()) return;
   container.querySelectorAll<HTMLElement>("[data-id]").forEach((el) => {
     const id = el.dataset.id as string;
     const prev = previousRects.get(id);
@@ -186,7 +193,7 @@ function playFlip(container: HTMLElement, previousRects: Map<string, DOMRect>): 
     el.style.transition = "none";
     el.style.transform = `translateY(${deltaY}px)`;
     requestAnimationFrame(() => {
-      el.style.transition = `transform ${ROW_FLIP_MS}ms cubic-bezier(.2,.7,.3,1)`;
+      el.style.transition = `transform ${ROW_FLIP_MS}ms cubic-bezier(0.23, 1, 0.32, 1)`;
       el.style.transform = "";
     });
   });
@@ -197,14 +204,19 @@ function renderRowLists(sorted: RankRecord[]): void {
   const previousRects = new Map<string, DOMRect>();
   for (const c of rowContainers) captureRects(c).forEach((rect, id) => previousRects.set(id, rect));
 
+  const leaderTime = sorted[0]?.time ?? 0;
   const mid = sorted.slice(3, 10);
   const rest = sorted.slice(10);
 
-  els.midList.innerHTML = mid.map((r, i) => listRow(r, i + 4, !previousIds.has(r.id), true)).join("");
+  els.midList.innerHTML = mid.map((r, i) => listRow(r, i + 4, !previousIds.has(r.id), true, leaderTime)).join("");
   els.restSection.style.display = rest.length > 0 ? "block" : "none";
-  els.restList.innerHTML = rest.map((r, i) => listRow(r, i + 11, !previousIds.has(r.id), false)).join("");
+  els.restList.innerHTML = rest.map((r, i) => listRow(r, i + 11, !previousIds.has(r.id), false, leaderTime)).join("");
 
   for (const c of rowContainers) playFlip(c, previousRects);
+}
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 async function renderPodium(top3: RankRecord[]): Promise<void> {
@@ -219,11 +231,12 @@ async function renderPodium(top3: RankRecord[]): Promise<void> {
 
   const priorTop3Ids = previousTop3Ids;
   previousTop3Ids = newTop3Ids;
+  const leaderTime = top3[0]?.time ?? 0;
 
-  if (podiumAnimating) {
-    // 이미 애니메이션 중이면 굳이 겹쳐서 재생하지 않고 최신 상태로 스냅.
+  if (podiumAnimating || prefersReducedMotion()) {
+    // 이미 애니메이션 중이거나 모션 감소 선호 시엔 겹쳐서 재생하지 않고 최신 상태로 스냅.
     els.podium.classList.remove("impact");
-    els.podium.innerHTML = top3.map((r, i) => podiumCard(r, i + 1, false)).join("");
+    els.podium.innerHTML = top3.map((r, i) => podiumCard(r, i + 1, false, leaderTime)).join("");
     return;
   }
 
@@ -257,7 +270,7 @@ async function renderPodium(top3: RankRecord[]): Promise<void> {
       const record = top3[rank - 1];
       if (!record) continue; // 인원이 줄어 그 자리가 아예 없어진 경우
       const wrapper = document.createElement("div");
-      wrapper.innerHTML = podiumCard(record, rank, true).trim();
+      wrapper.innerHTML = podiumCard(record, rank, true, leaderTime).trim();
       const newCard = wrapper.firstElementChild as HTMLElement;
       els.podium.appendChild(newCard);
     }

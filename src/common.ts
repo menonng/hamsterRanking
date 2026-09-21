@@ -63,6 +63,11 @@ export function formatTime(totalSeconds: number): string {
   return minutes > 0 ? `${minutes}분 ${secsStr}초` : `${secsStr}초`;
 }
 
+/** 선두와의 기록 차이를 "+M분 S.SS초" 형태로 표시한다. */
+export function formatGap(gapSeconds: number): string {
+  return `+${formatTime(gapSeconds)}`;
+}
+
 export function uid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
