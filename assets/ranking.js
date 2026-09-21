@@ -376,6 +376,30 @@ function listenLocalUpdates() {
         };
     }
 }
+/** 타이틀+1~3위 페이드인이 끝나고 0.75초 뒤, 접혀 있던 4위 이하 영역을 펼쳐서 보여준다. */
+function initLanding() {
+    if (prefersReducedMotion())
+        return;
+    const collapsedSections = document.querySelectorAll(".landing-hidden");
+    if (collapsedSections.length === 0)
+        return;
+    const FADE_MS = 700; // .landing-fade 애니메이션 길이와 동일하게 맞춘다
+    const HOLD_MS = 750; // 요청된 "페이드인 종료 0.75초 뒤" 대기 시간
+    window.setTimeout(() => {
+        collapsedSections.forEach((section) => {
+            // 접힌 상태에서 측정한 scrollHeight는 패딩이 0이라 실제 펼쳐진 높이보다 작게
+            // 잡히므로, 넉넉한 고정값으로 전환한 뒤 끝나면 인라인 스타일을 지워 자연스러운
+            // 높이로 되돌린다.
+            section.style.maxHeight = "2000px";
+            section.classList.remove("landing-hidden");
+        });
+        window.setTimeout(() => {
+            collapsedSections.forEach((section) => {
+                section.style.maxHeight = "";
+            });
+        }, FADE_MS);
+    }, FADE_MS + HOLD_MS);
+}
 function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     els.themeToggle.setAttribute("aria-pressed", String(theme === "dark"));
@@ -391,6 +415,7 @@ function initTheme() {
     });
 }
 initTheme();
+initLanding();
 void render(getCombined());
 listenLocalUpdates();
 startPolling();

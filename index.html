@@ -11,10 +11,14 @@
 <link rel="stylesheet" href="./assets/style.css" />
 </head>
 <body>
-  <header class="top">
+  <header class="top landing-fade">
     <div class="brand">
-      <span class="brand-badge">🐹</span>
-      <h1>햄스터봇 레이싱 랭킹</h1>
+      <pre class="brand-ascii" aria-label="HAMSTER">  ██╗  ██╗ █████╗ ███╗   ███╗███████╗████████╗███████╗██████╗
+  ██║  ██║██╔══██╗████╗ ████║██╔════╝╚══██╔══╝██╔════╝██╔══██╗
+  ███████║███████║██╔████╔██║███████╗   ██║   █████╗  ██████╔╝
+  ██╔══██║██╔══██║██║╚██╔╝██║╚════██║   ██║   ██╔══╝  ██╔══██╗
+  ██║  ██║██║  ██║██║ ╚═╝ ██║███████║   ██║   ███████╗██║  ██║
+  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝</pre>
     </div>
     <div class="header-right">
       <div class="status-line">
@@ -30,18 +34,18 @@
 
   <main>
     <div class="fold">
-      <section class="card podium-section" aria-label="1위부터 3위">
+      <section class="card podium-section landing-fade" aria-label="1위부터 3위">
         <h2><span class="h2-icon icon-gold">🏆</span>1위 ~ 3위</h2>
         <div id="podium" class="podium"></div>
       </section>
 
-      <section class="card" aria-label="4위부터 10위">
+      <section id="midSection" class="card landing-hidden landing-collapsible" aria-label="4위부터 10위">
         <h2><span class="h2-icon icon-mid">🎖️</span>4위 ~ 10위</h2>
         <div id="midList"></div>
       </section>
     </div>
 
-    <section id="restSection" class="card" style="display:none; margin-top:20px;" aria-label="11위 이하">
+    <section id="restSection" class="card landing-hidden landing-collapsible" style="display:none; margin-top:20px;" aria-label="11위 이하">
       <h2><span class="h2-icon icon-rest">📋</span>11위 이하</h2>
       <div id="restList"></div>
     </section>

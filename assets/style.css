@@ -139,6 +139,19 @@ header.top h1 {
   color: var(--ink);
 }
 
+.brand-ascii {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(4.5px, 2.6vw, 10px);
+  line-height: 1.15;
+  white-space: pre;
+  letter-spacing: 0;
+  color: var(--color-accent);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -457,6 +470,28 @@ section.card {
 }
 .row.enter { animation: popIn var(--dur-medium) var(--ease-out) backwards; }
 
+/* ---------- 랜딩 연출: 타이틀+1~3위만 페이드인 → 0.75초 뒤 4~10위 공개 ---------- */
+
+@keyframes landingFadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.landing-fade {
+  animation: landingFadeIn 700ms var(--ease-out) both;
+}
+.landing-collapsible {
+  transition: max-height 700ms var(--ease-in-out), opacity 500ms ease,
+    padding 700ms var(--ease-in-out), border-color 700ms var(--ease-in-out);
+}
+section.card.landing-hidden {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-color: transparent;
+}
+
 /* 1~3위 변동 시: 기존 시상대가 산산조각나며 사라지고(shatter), 새 시상대가 위에서
    떨어져 내려와(drop) 충격과 함께 착지한다(impact). */
 
@@ -539,6 +574,7 @@ section.card {
   .podium-card { max-width: none; }
 
   .brand-badge { width: 32px; height: 32px; font-size: 17px; border-radius: var(--radius-sm); }
+  .brand-ascii { font-size: clamp(4px, 2.05vw, 7.5px); }
   .status-line { gap: 6px; }
   .status-pill { padding: 4px 9px; font-size: 11.5px; }
 
@@ -725,4 +761,14 @@ details.settings summary {
   .debris { display: none; }
   .podium.impact { animation: none; }
   .podium.impact::after { display: none; }
+  .landing-fade { animation: none; opacity: 1; transform: none; }
+  section.card.landing-hidden {
+    max-height: none;
+    opacity: 1;
+    overflow: visible;
+    padding-top: var(--space-5);
+    padding-bottom: var(--space-5);
+    border-color: var(--rule);
+  }
+  .landing-collapsible { transition: none; }
 }
