@@ -98,8 +98,8 @@ header.top {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--space-3);
-  padding: 14px clamp(16px, 4vw, 40px);
+  gap: var(--space-2);
+  padding: 8px clamp(12px, 3vw, 28px);
   border-bottom: 1px solid var(--rule);
   position: sticky;
   top: 0;
@@ -142,25 +142,33 @@ header.top h1 {
 .hero-title {
   display: flex;
   justify-content: center;
-  padding: clamp(16px, 5vw, 40px) 0 clamp(4px, 2vw, 8px);
+  padding: clamp(12px, 4vw, 32px) 0 clamp(4px, 2vw, 8px);
+}
+
+.hero-title-frame {
+  position: relative;
+  width: clamp(200px, 68vw, 760px);
+  /* .brand-ascii 원본(10px, white-space:pre)의 실측 비율 373.28:69 */
+  aspect-ratio: 373.28 / 69;
 }
 
 .brand-ascii {
+  position: absolute;
+  top: 0;
+  left: 0;
   margin: 0;
-  min-width: 0;
   font-family: var(--font-mono);
-  /* 박스 문자(█ 등)는 10px보다 큰 font-size에서 폰트 대체 시 글리프가 깨져 보이는
-     렌더링 문제가 있어, 폰트 크기는 안전한 10px로 고정하고 zoom으로 확대한다
-     (zoom은 레이아웃 박스 자체를 키우므로 transform:scale과 달리 별도 높이
-     보정이 필요 없다). */
+  /* 박스 문자(█ 등)는 10px보다 큰 font-size로 "실제로" 텍스트를 다시 배치/셰이핑하면
+     기기별 폰트 대체 과정에서 글리프가 겹쳐 깨질 수 있다(zoom도 내부적으로 텍스트를
+     다시 셰이핑하므로 동일 문제 발생). 검증된 안전한 10px로 고정해 한 번만 셰이핑한
+     뒤, 이미 그려진 픽셀만 확대하는 transform:scale로 키운다. */
   font-size: 10px;
-  zoom: calc(clamp(200px, 68vw, 760px) / 373.28px);
   line-height: 1.15;
   white-space: pre;
   letter-spacing: 0;
   color: var(--color-accent);
-  max-width: 100%;
-  overflow-x: auto;
+  transform-origin: top left;
+  transform: scale(calc(clamp(200px, 68vw, 760px) / 373.28px));
 }
 
 .header-right {
@@ -173,8 +181,8 @@ header.top h1 {
 .status-line {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: 12.5px;
+  gap: 6px;
+  font-size: 11.5px;
   color: var(--ink-dim);
   flex-wrap: wrap;
 }
@@ -183,7 +191,7 @@ header.top h1 {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 5px 12px;
+  padding: 3px 10px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--rule);
 }
@@ -204,8 +212,8 @@ header.top h1 {
 .toggle-track {
   display: flex;
   align-items: center;
-  width: 44px;
-  height: 24px;
+  width: 38px;
+  height: 21px;
   background: var(--paper-3);
   border: 1px solid var(--rule);
   border-radius: 999px;
@@ -213,8 +221,8 @@ header.top h1 {
   transition: background var(--dur-short) var(--ease-out);
 }
 .toggle-thumb {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
   background: var(--card);
   display: flex;
@@ -225,7 +233,7 @@ header.top h1 {
   transition: transform var(--dur-short) var(--ease-out);
 }
 html[data-theme="dark"] .toggle-track { background: var(--color-accent-2); border-color: transparent; }
-html[data-theme="dark"] .toggle-thumb { transform: translateX(20px); }
+html[data-theme="dark"] .toggle-thumb { transform: translateX(17px); }
 
 .live-dot {
   position: relative;
