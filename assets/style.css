@@ -97,7 +97,7 @@ header.top {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: var(--space-3);
   padding: 14px clamp(16px, 4vw, 40px);
   border-bottom: 1px solid var(--rule);
@@ -139,11 +139,22 @@ header.top h1 {
   color: var(--ink);
 }
 
+.hero-title {
+  display: flex;
+  justify-content: center;
+  padding: clamp(16px, 5vw, 40px) 0 clamp(4px, 2vw, 8px);
+}
+
 .brand-ascii {
   margin: 0;
   min-width: 0;
   font-family: var(--font-mono);
-  font-size: clamp(4.5px, 2.6vw, 10px);
+  /* 박스 문자(█ 등)는 10px보다 큰 font-size에서 폰트 대체 시 글리프가 깨져 보이는
+     렌더링 문제가 있어, 폰트 크기는 안전한 10px로 고정하고 zoom으로 확대한다
+     (zoom은 레이아웃 박스 자체를 키우므로 transform:scale과 달리 별도 높이
+     보정이 필요 없다). */
+  font-size: 10px;
+  zoom: calc(clamp(200px, 68vw, 760px) / 373.28px);
   line-height: 1.15;
   white-space: pre;
   letter-spacing: 0;
@@ -574,7 +585,6 @@ section.card.landing-hidden {
   .podium-card { max-width: none; }
 
   .brand-badge { width: 32px; height: 32px; font-size: 17px; border-radius: var(--radius-sm); }
-  .brand-ascii { font-size: clamp(4px, 2.05vw, 7.5px); }
   .status-line { gap: 6px; }
   .status-pill { padding: 4px 9px; font-size: 11.5px; }
 
