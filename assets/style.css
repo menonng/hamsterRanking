@@ -1,33 +1,31 @@
-/* Hallmark · genre: playful · macrostructure: custom (live scoreboard) · theme: custom (festival coral/violet, warm oklch anchor h75) */
+/* Hallmark · genre: editorial-restrained · macrostructure: custom (live scoreboard) · theme: custom (flat coral/violet, oklch anchor h75) */
 :root {
   /* ---------- 팔레트 (OKLCH, 따뜻한 축제 톤 anchor hue 75) ---------- */
-  --paper: oklch(97% 0.014 75);
-  --paper-2: oklch(93.5% 0.018 75);
-  --paper-3: oklch(89.5% 0.022 75);
-  --card: oklch(99% 0.006 75);
-  --ink: oklch(23% 0.025 50);
-  --ink-dim: oklch(47% 0.022 55);
-  --rule: oklch(86% 0.02 75);
-  --neutral-badge: oklch(90% 0.015 75);
+  --paper: oklch(97% 0.012 75);
+  --paper-2: oklch(94% 0.015 75);
+  --paper-3: oklch(90% 0.018 75);
+  --card: oklch(99% 0.005 75);
+  --ink: oklch(22% 0.02 50);
+  --ink-dim: oklch(47% 0.018 55);
+  --rule: oklch(84% 0.016 75);
+  --neutral-badge: oklch(89% 0.012 75);
 
-  --color-accent: oklch(63% 0.19 35);       /* 산호빛 오렌지 — 축제 에너지 */
-  --color-accent-ink: oklch(99% 0.008 35);
-  --color-accent-2: oklch(52% 0.19 300);    /* 바이올렛 — AI 표식 전용 */
-  --color-focus: oklch(68% 0.18 35);
-  --color-success: oklch(63% 0.15 150);
-  --color-warn: oklch(78% 0.15 85);
-  --color-danger: oklch(58% 0.2 25);
+  --color-accent: oklch(60% 0.18 35);       /* 산호빛 오렌지 */
+  --color-accent-ink: oklch(99% 0.006 35);
+  --color-accent-2: oklch(48% 0.17 300);    /* 바이올렛 — AI 표식 전용 */
+  --color-focus: oklch(65% 0.18 35);
+  --color-success: oklch(60% 0.14 150);
+  --color-warn: oklch(72% 0.14 85);
+  --color-danger: oklch(55% 0.19 25);
 
-  --medal-gold: oklch(79% 0.16 85);
-  --medal-silver: oklch(83% 0.018 260);
-  --medal-bronze: oklch(64% 0.11 45);
+  --medal-gold: oklch(76% 0.15 85);
+  --medal-silver: oklch(80% 0.014 260);
+  --medal-bronze: oklch(60% 0.1 45);
 
-  --shadow-ambient: 0 1px 2px color-mix(in oklch, var(--ink) 6%, transparent), 0 10px 26px -16px color-mix(in oklch, var(--ink) 24%, transparent);
-  --shadow-lift: 0 18px 40px -20px color-mix(in oklch, var(--ink) 34%, transparent);
-  --shine: linear-gradient(160deg, color-mix(in oklch, white 60%, transparent), transparent 45%);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --font-display: "Jua", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", sans-serif;
-  --font-body: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-display: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-body: var(--font-display);
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
 
   /* ---------- 간격/도형 스케일 ---------- */
@@ -37,38 +35,33 @@
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
-  --radius-sm: 12px;
-  --radius-md: 18px;
-  --radius-lg: 26px;
-  --radius-xl: 32px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
 }
 
 :root[data-theme="dark"] {
-  --paper: oklch(19% 0.022 50);
-  --paper-2: oklch(24% 0.026 50);
-  --paper-3: oklch(29% 0.028 50);
-  --card: oklch(23% 0.024 50);
-  --ink: oklch(95% 0.012 75);
-  --ink-dim: oklch(76% 0.016 75);
-  --rule: oklch(34% 0.024 55);
-  --neutral-badge: oklch(38% 0.026 60);
+  --paper: oklch(17% 0.018 50);
+  --paper-2: oklch(21% 0.02 50);
+  --paper-3: oklch(26% 0.022 50);
+  --card: oklch(20% 0.02 50);
+  --ink: oklch(94% 0.01 75);
+  --ink-dim: oklch(72% 0.014 75);
+  --rule: oklch(31% 0.02 55);
+  --neutral-badge: oklch(30% 0.02 60);
 
-  --color-accent: oklch(72% 0.18 35);
-  --color-accent-ink: oklch(16% 0.02 35);
-  --color-accent-2: oklch(70% 0.17 300);
-  --color-focus: oklch(76% 0.17 35);
-  --color-success: oklch(70% 0.15 150);
-  --color-warn: oklch(80% 0.15 85);
-  --color-danger: oklch(66% 0.2 25);
+  --color-accent: oklch(68% 0.17 35);
+  --color-accent-ink: oklch(15% 0.016 35);
+  --color-accent-2: oklch(66% 0.16 300);
+  --color-focus: oklch(72% 0.17 35);
+  --color-success: oklch(66% 0.14 150);
+  --color-warn: oklch(74% 0.14 85);
+  --color-danger: oklch(62% 0.19 25);
 
-  --medal-gold: oklch(83% 0.17 85);
-  --medal-silver: oklch(86% 0.02 260);
-  --medal-bronze: oklch(69% 0.12 45);
-
-  --shadow-ambient: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px -16px rgba(0, 0, 0, 0.55);
-  --shadow-lift: 0 22px 46px -20px rgba(0, 0, 0, 0.6);
-  --shine: linear-gradient(160deg, rgba(255, 255, 255, 0.08), transparent 45%);
+  --medal-gold: oklch(80% 0.16 85);
+  --medal-silver: oklch(83% 0.016 260);
+  --medal-bronze: oklch(64% 0.11 45);
 }
 
 * { box-sizing: border-box; }
@@ -86,19 +79,13 @@ html, body {
 }
 
 body {
-  background:
-    radial-gradient(circle at 10% -6%, color-mix(in oklch, var(--color-accent) 20%, transparent), transparent 42%),
-    radial-gradient(circle at 90% 4%, color-mix(in oklch, var(--medal-gold) 22%, transparent), transparent 38%),
-    radial-gradient(circle at 50% 118%, color-mix(in oklch, var(--color-accent-2) 16%, transparent), transparent 46%),
-    var(--paper);
-  background-attachment: fixed;
   min-height: 100vh;
   overflow-x: clip;
 }
 
 a { color: inherit; }
 
-::selection { background: color-mix(in oklch, var(--color-accent) 45%, transparent); }
+::selection { background: color-mix(in oklch, var(--color-accent) 40%, transparent); }
 
 /* ---------- 헤더 (공통) ---------- */
 
@@ -108,28 +95,14 @@ header.top {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: 14px clamp(16px, 4vw, 40px) 18px;
+  padding: 14px clamp(16px, 4vw, 40px);
+  border-bottom: 1px solid var(--rule);
   position: sticky;
   top: 0;
-  background: color-mix(in oklch, var(--paper) 86%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in oklch, var(--paper) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 10;
-  position: sticky;
-}
-header.top::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 3px;
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--ink) 0 14px,
-    transparent 14px 26px
-  );
-  opacity: 0.14;
 }
 
 .brand {
@@ -141,22 +114,22 @@ header.top::after {
 
 .brand-badge {
   flex-shrink: 0;
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 20px;
   border-radius: var(--radius-md);
-  background: linear-gradient(155deg, var(--color-accent), var(--color-accent-2));
-  box-shadow: 0 8px 18px -6px color-mix(in oklch, var(--color-accent) 60%, transparent);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
 }
 
 header.top h1 {
   font-family: var(--font-display);
-  font-size: clamp(18px, 2.6vw, 24px);
-  font-weight: 400;
-  letter-spacing: -0.005em;
+  font-size: clamp(17px, 2.6vw, 22px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
   margin: 0;
   white-space: nowrap;
   color: var(--ink);
@@ -184,9 +157,9 @@ header.top h1 {
   gap: 4px;
   padding: 5px 12px;
   border-radius: var(--radius-pill);
-  background: var(--paper-3);
+  border: 1px solid var(--rule);
 }
-.status-pill strong { color: var(--ink); font-weight: 800; }
+.status-pill strong { color: var(--ink); font-weight: 800; font-family: var(--font-mono); }
 
 .theme-toggle {
   background: none;
@@ -202,36 +175,36 @@ header.top h1 {
   width: 44px;
   height: 24px;
   background: var(--paper-3);
+  border: 1px solid var(--rule);
   border-radius: 999px;
   padding: 2px;
-  transition: background .25s ease;
+  transition: background .2s var(--ease-out);
 }
 .toggle-thumb {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--card);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   transform: translateX(0);
-  transition: transform .25s var(--ease-out, cubic-bezier(.2,.7,.3,1));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+  transition: transform .2s var(--ease-out);
 }
-html[data-theme="dark"] .toggle-track { background: var(--color-accent-2); }
+html[data-theme="dark"] .toggle-track { background: var(--color-accent-2); border-color: transparent; }
 html[data-theme="dark"] .toggle-thumb { transform: translateX(20px); }
 
 .live-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--color-warn);
   display: inline-block;
   margin-right: 6px;
 }
-.live-dot.live-ok { background: var(--color-success); box-shadow: 0 0 8px var(--color-success); }
-.live-dot.live-fail { background: var(--color-danger); box-shadow: 0 0 8px var(--color-danger); }
+.live-dot.live-ok { background: var(--color-success); }
+.live-dot.live-fail { background: var(--color-danger); }
 
 /* ---------- 레이아웃 ---------- */
 
@@ -252,18 +225,17 @@ main {
 section.card {
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   padding: var(--space-5) clamp(14px, 3vw, var(--space-5));
-  box-shadow: var(--shadow-ambient);
 }
 
 .card h2 {
   margin: 0 0 var(--space-4);
-  font-family: var(--font-display);
-  font-size: 14.5px;
+  font-size: 13px;
   color: var(--ink-dim);
-  font-weight: 400;
-  letter-spacing: 0.01em;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -273,15 +245,12 @@ section.card {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: var(--radius-sm);
-  font-size: 14px;
-  filter: saturate(1.1);
+  font-size: 13px;
+  border: 1px solid var(--rule);
 }
-.h2-icon.icon-gold { background: color-mix(in oklch, var(--medal-gold) 34%, transparent); }
-.h2-icon.icon-mid { background: color-mix(in oklch, var(--color-accent-2) 22%, transparent); }
-.h2-icon.icon-rest { background: var(--neutral-badge); }
 
 /* ---------- 시상대 (1~3위) ---------- */
 
@@ -303,22 +272,14 @@ section.card {
   max-width: calc(240px * var(--tier));
   background: var(--card);
   border: 1px solid var(--rule);
-  border-top: 5px solid var(--accent);
-  border-radius: clamp(14px, 2.5vw, var(--radius-lg));
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
   text-align: center;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-ambient), 0 16px 36px -18px color-mix(in oklch, var(--accent) 55%, transparent);
   opacity: 1;
-}
-.podium-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--shine);
-  pointer-events: none;
 }
 
 /* 박스 전체 크기(너비/여백/글자 크기)도 순위에 맞게 차등 적용 */
@@ -334,11 +295,9 @@ section.card {
   font-size: calc(clamp(20px, 6vw, 34px) * var(--tier));
   line-height: 1;
   margin-bottom: 4px;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
 }
 .podium-name {
-  font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 800;
   font-size: calc(clamp(13px, 3.6vw, 19px) * var(--tier));
   letter-spacing: -0.005em;
   margin-top: 6px;
@@ -370,26 +329,21 @@ section.card {
   position: relative;
   margin-top: auto;
   width: 100%;
-  background:
-    repeating-conic-gradient(from 45deg, rgba(255, 255, 255, 0.5) 0 25%, transparent 0 50%) 0 0 / 10px 10px,
-    linear-gradient(155deg, rgba(255, 255, 255, 0.35), transparent 55%),
-    var(--accent);
-  background-blend-mode: overlay, normal, normal;
-  color: rgba(0, 0, 0, .6);
+  background: var(--accent);
+  color: rgba(0, 0, 0, .62);
   font-family: var(--font-mono);
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: calc(clamp(20px, 6.5vw, 32px) * var(--tier));
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .podium-step::after {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.35);
 }
 .podium-card.rank-1 .podium-step { height: clamp(64px, 16vw, 100px); }
 .podium-card.rank-2 .podium-step { height: clamp(46px, 12vw, 72px); }
@@ -412,10 +366,10 @@ section.card {
 .row:hover { background: var(--paper-2); }
 
 .row-rank {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: linear-gradient(155deg, color-mix(in oklch, var(--accent) 88%, white 12%), var(--accent));
+  background: var(--accent);
   color: #12132a;
   font-family: var(--font-mono);
   font-weight: 800;
@@ -423,7 +377,6 @@ section.card {
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  box-shadow: 0 3px 8px -3px color-mix(in oklch, var(--accent) 70%, transparent);
 }
 
 .row-name { font-weight: 700; letter-spacing: -0.005em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -436,14 +389,14 @@ section.card {
   gap: 3px;
   font-size: 11px;
   font-weight: 800;
-  background: color-mix(in oklch, var(--color-accent-2) 16%, var(--card));
+  background: color-mix(in oklch, var(--color-accent-2) 14%, var(--card));
   color: color-mix(in oklch, var(--color-accent-2) 78%, var(--ink));
-  border: 1px solid color-mix(in oklch, var(--color-accent-2) 45%, transparent);
+  border: 1px solid color-mix(in oklch, var(--color-accent-2) 42%, transparent);
   border-radius: var(--radius-pill);
   padding: 2px 9px 2px 7px;
 }
 :root[data-theme="dark"] .ai-badge {
-  background: color-mix(in oklch, var(--color-accent-2) 45%, var(--paper));
+  background: color-mix(in oklch, var(--color-accent-2) 32%, var(--paper));
   color: #fff;
 }
 
@@ -461,8 +414,7 @@ section.card {
   text-align: center;
 }
 .empty-state .big {
-  font-size: 44px;
-  filter: drop-shadow(0 6px 14px color-mix(in oklch, var(--color-accent) 40%, transparent));
+  font-size: 40px;
 }
 
 /* ---------- 등장 애니메이션 ---------- */
@@ -497,7 +449,6 @@ section.card {
 }
 .podium-card.shatter {
   overflow: visible;
-  box-shadow: none;
   border-color: transparent;
 }
 
@@ -541,12 +492,12 @@ section.card {
   content: "";
   position: absolute;
   inset: -20% -10%;
-  background: radial-gradient(circle at 50% 68%, rgba(255, 255, 255, 0.9), transparent 55%);
+  background: radial-gradient(circle at 50% 68%, rgba(255, 255, 255, 0.85), transparent 55%);
   animation: impactFlash 0.32s ease-out forwards;
   pointer-events: none;
 }
 @keyframes impactFlash {
-  0% { opacity: 0.6; }
+  0% { opacity: 0.5; }
   100% { opacity: 0; }
 }
 
@@ -555,7 +506,7 @@ section.card {
 @media (max-width: 640px) {
   .podium-card { max-width: none; }
 
-  .brand-badge { width: 36px; height: 36px; font-size: 19px; border-radius: var(--radius-sm); }
+  .brand-badge { width: 32px; height: 32px; font-size: 17px; border-radius: var(--radius-sm); }
   .status-line { gap: 6px; }
   .status-pill { padding: 4px 9px; font-size: 11.5px; }
 
@@ -597,21 +548,20 @@ section.card {
 button {
   font: inherit;
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: 10px 18px;
   background: var(--color-accent);
   color: var(--color-accent-ink);
   font-weight: 800;
   letter-spacing: -0.005em;
-  box-shadow: 0 4px 12px -5px color-mix(in oklch, var(--color-accent) 70%, transparent);
-  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  transition: filter .12s ease;
 }
-button:hover:not(:disabled) { filter: brightness(1.04); transform: translateY(-1px); }
-button:active:not(:disabled) { transform: translateY(0); }
-button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
-button.secondary { background: var(--neutral-badge); color: var(--ink); box-shadow: none; }
-button.danger { background: var(--color-danger); color: #fff; box-shadow: 0 4px 12px -5px color-mix(in oklch, var(--color-danger) 70%, transparent); }
+button:hover:not(:disabled) { filter: brightness(1.05); }
+button:active:not(:disabled) { filter: brightness(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.secondary { background: transparent; color: var(--ink); border-color: var(--rule); }
+button.danger { background: var(--color-danger); color: #fff; }
 button:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 
 textarea, input[type="text"], input[type="password"] {
@@ -637,9 +587,9 @@ textarea { min-height: 96px; resize: vertical; }
 .form-error {
   display: none;
   white-space: pre-line;
-  background: color-mix(in oklch, var(--color-danger) 18%, var(--paper));
+  background: color-mix(in oklch, var(--color-danger) 16%, var(--paper));
   border: 1px solid var(--color-danger);
-  color: #fff;
+  color: var(--ink);
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   font-size: 13px;
