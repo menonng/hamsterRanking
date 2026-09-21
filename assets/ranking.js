@@ -376,29 +376,63 @@ function listenLocalUpdates() {
         };
     }
 }
-/** 타이틀+1~3위 페이드인이 끝나고 0.75초 뒤, 접혀 있던 4위 이하 영역을 펼쳐서 보여준다. */
+/**
+ * 타이틀+1~3위 페이드인이 끝나고 0.75초 뒤, 사용자의 스크롤 위치를 실제로(그냥
+ * 높이만 바뀌는 흉내가 아니라 진짜 window.scrollTo로) 강제로 이동시켜 기본 화면
+ * (1~3위+4~10위)을 드러낸다.
+ */
 function initLanding() {
-    if (prefersReducedMotion())
+    const spacer = document.getElementById("landingSpacer");
+    const podiumSection = document.querySelector(".podium-section");
+    const podiumEl = document.getElementById("podium");
+    if (!spacer || !podiumSection || !podiumEl || prefersReducedMotion())
         return;
-    const collapsedSections = document.querySelectorAll(".landing-hidden");
-    if (collapsedSections.length === 0)
-        return;
-    const FADE_MS = 700; // .landing-fade 애니메이션 길이와 동일하게 맞춘다
-    const HOLD_MS = 750; // 요청된 "페이드인 종료 0.75초 뒤" 대기 시간
-    window.setTimeout(() => {
-        collapsedSections.forEach((section) => {
-            // 접힌 상태에서 측정한 scrollHeight는 패딩이 0이라 실제 펼쳐진 높이보다 작게
-            // 잡히므로, 넉넉한 고정값으로 전환한 뒤 끝나면 인라인 스타일을 지워 자연스러운
-            // 높이로 되돌린다.
-            section.style.maxHeight = "2000px";
-            section.classList.remove("landing-hidden");
-        });
+    const runLandingSequence = () => {
+        const FADE_MS = 700; // .landing-fade 애니메이션 길이와 동일하게 맞춘다
+        const HOLD_MS = 750; // 요청된 "페이드인 종료 0.75초 뒤" 대기 시간
+        const SCROLL_FALLBACK_MS = 700; // scrollend 미지원 브라우저 대비 안전값
+        // 시상대 아래 남는 뷰포트 공간만큼 스페이서를 채워, 접속 직후엔 타이틀+1~3위까지만
+        // 보이도록 자른다.
+        const remaining = Math.max(0, window.innerHeight - podiumSection.getBoundingClientRect().bottom);
+        if (remaining <= 0)
+            return; // 이미 다 보이면 스크롤할 필요 없음
+        spacer.style.height = `${remaining}px`;
         window.setTimeout(() => {
-            collapsedSections.forEach((section) => {
-                section.style.maxHeight = "";
-            });
-        }, FADE_MS);
-    }, FADE_MS + HOLD_MS);
+            let done = false;
+            const finishReveal = () => {
+                if (done)
+                    return;
+                done = true;
+                // 스페이서를 걷어내는 동시에 스크롤 위치를 0으로 되돌린다 — 방금 스크롤해서
+                // 내려온 만큼을 스페이서 제거로 다시 끌어올리는 셈이라 화면은 그대로 유지되고,
+                // 이후 사용자가 위로 스크롤해도 빈 여백이 남지 않는다.
+                spacer.style.height = "0px";
+                window.scrollTo(0, 0);
+            };
+            // scrollend 미지원 브라우저(구형 Safari 등)에서도 리스너 등록 자체는 무해하므로,
+            // 리스너와 타임아웃 둘 다 걸어두고 먼저 발생하는 쪽을 쓴다.
+            window.addEventListener("scrollend", finishReveal, { once: true });
+            window.setTimeout(finishReveal, SCROLL_FALLBACK_MS);
+            window.scrollTo({ top: remaining, behavior: "smooth" });
+        }, FADE_MS + HOLD_MS);
+    };
+    // 시상대는 데이터를 비동기로 불러온 뒤에야 채워지므로, 그 전에 높이를 재면
+    // 실제보다 훨씬 크게(또는 작게) 계산될 수 있다. 실제로 카드가 그려질 때까지
+    // 기다렸다가 그 시점의 실측 높이로 스페이서를 계산한다.
+    if (podiumEl.children.length > 0) {
+        runLandingSequence();
+        return;
+    }
+    const observer = new MutationObserver(() => {
+        if (podiumEl.children.length > 0) {
+            observer.disconnect();
+            // 삽입 직후 한 프레임 안에는 레이아웃이 아직 완전히 반영되지 않았을 수 있어
+            // rAF를 두 번 걸쳐 확실히 자리 잡은 뒤에 잰다(카드의 낙하 애니메이션은
+            // transform이라 레이아웃 크기 자체에는 영향을 주지 않는다).
+            requestAnimationFrame(() => requestAnimationFrame(runLandingSequence));
+        }
+    });
+    observer.observe(podiumEl, { childList: true });
 }
 function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);

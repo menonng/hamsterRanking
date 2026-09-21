@@ -27,14 +27,13 @@
   <main>
     <div class="fold">
       <div class="hero-title landing-fade">
-        <div class="hero-title-frame">
-          <pre class="brand-ascii" aria-label="HAMSTER">  ██╗  ██╗ █████╗ ███╗   ███╗███████╗████████╗███████╗██████╗
-  ██║  ██║██╔══██╗████╗ ████║██╔════╝╚══██╔══╝██╔════╝██╔══██╗
-  ███████║███████║██╔████╔██║███████╗   ██║   █████╗  ██████╔╝
-  ██╔══██║██╔══██║██║╚██╔╝██║╚════██║   ██║   ██╔══╝  ██╔══██╗
-  ██║  ██║██║  ██║██║ ╚═╝ ██║███████║   ██║   ███████╗██║  ██║
-  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝</pre>
-        </div>
+        <pre class="brand-ascii" aria-label="HAMSTER">█   █   ███   █   █   ████  █████  █████  ████ 
+█   █  █   █  ██ ██  █        █    █      █   █
+█   █  █   █  █ █ █  █        █    █      █   █
+█████  █████  █   █   ███     █    ████   ████ 
+█   █  █   █  █   █      █    █    █      █ █  
+█   █  █   █  █   █      █    █    █      █  █ 
+█   █  █   █  █   █  ████     █    █████  █   █</pre>
       </div>
 
       <section class="card podium-section landing-fade" aria-label="1위부터 3위">
@@ -42,13 +41,15 @@
         <div id="podium" class="podium"></div>
       </section>
 
-      <section id="midSection" class="card landing-hidden landing-collapsible" aria-label="4위부터 10위">
+      <div id="landingSpacer" aria-hidden="true"></div>
+
+      <section id="midSection" class="card" aria-label="4위부터 10위">
         <h2><span class="h2-icon icon-mid">🎖️</span>4위 ~ 10위</h2>
         <div id="midList"></div>
       </section>
     </div>
 
-    <section id="restSection" class="card landing-hidden landing-collapsible" style="display:none; margin-top:20px;" aria-label="11위 이하">
+    <section id="restSection" class="card" style="display:none; margin-top:20px;" aria-label="11위 이하">
       <h2><span class="h2-icon icon-rest">📋</span>11위 이하</h2>
       <div id="restList"></div>
     </section>

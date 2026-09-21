@@ -145,30 +145,20 @@ header.top h1 {
   padding: clamp(12px, 4vw, 32px) 0 clamp(4px, 2vw, 8px);
 }
 
-.hero-title-frame {
-  position: relative;
-  width: clamp(200px, 68vw, 760px);
-  /* .brand-ascii 원본(10px, white-space:pre)의 실측 비율 373.28:69 */
-  aspect-ratio: 373.28 / 69;
-}
-
 .brand-ascii {
-  position: absolute;
-  top: 0;
-  left: 0;
   margin: 0;
   font-family: var(--font-mono);
-  /* 박스 문자(█ 등)는 10px보다 큰 font-size로 "실제로" 텍스트를 다시 배치/셰이핑하면
-     기기별 폰트 대체 과정에서 글리프가 겹쳐 깨질 수 있다(zoom도 내부적으로 텍스트를
-     다시 셰이핑하므로 동일 문제 발생). 검증된 안전한 10px로 고정해 한 번만 셰이핑한
-     뒤, 이미 그려진 픽셀만 확대하는 transform:scale로 키운다. */
-  font-size: 10px;
-  line-height: 1.15;
+  /* 풀블록(█) 한 종류만 쓰는 도트 폰트라 폰트 대체가 일어나도 글자 폭이 어긋나
+     깨질 일이 없다(이전엔 굵기가 다른 박스 드로잉 문자 ╗╔╝╚═를 섞어 쓰다가 기기별
+     폰트 대체 시 정렬이 어긋났었다). 그래서 별도 확대 트릭 없이 font-size만으로
+     반응형 크기를 준다. */
+  font-size: clamp(6.5px, 2.2vw, 25px);
+  line-height: 1.1;
   white-space: pre;
   letter-spacing: 0;
   color: var(--color-accent);
-  transform-origin: top left;
-  transform: scale(calc(clamp(200px, 68vw, 760px) / 373.28px));
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .header-right {
@@ -489,7 +479,7 @@ section.card {
 }
 .row.enter { animation: popIn var(--dur-medium) var(--ease-out) backwards; }
 
-/* ---------- 랜딩 연출: 타이틀+1~3위만 페이드인 → 0.75초 뒤 4~10위 공개 ---------- */
+/* ---------- 랜딩 연출: 타이틀+1~3위만 페이드인 → 0.75초 뒤 스크롤로 4~10위 공개 ---------- */
 
 @keyframes landingFadeIn {
   from { opacity: 0; transform: translateY(14px); }
@@ -498,17 +488,13 @@ section.card {
 .landing-fade {
   animation: landingFadeIn 700ms var(--ease-out) both;
 }
-.landing-collapsible {
-  transition: max-height 700ms var(--ease-in-out), opacity 500ms ease,
-    padding 700ms var(--ease-in-out), border-color 700ms var(--ease-in-out);
-}
-section.card.landing-hidden {
-  overflow: hidden;
-  max-height: 0;
-  opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-color: transparent;
+/* 시상대 바로 아래를 이 스페이서로 채워 뷰포트를 넘치게 만들어, 접속 직후엔
+   화면에 타이틀+1~3위까지만 보이게 자른다. 0.75초 뒤 JS가 실제로
+   window.scrollTo를 호출해 이 스페이서만큼 스크롤을 강제로 내리고, 스크롤이
+   끝나면 스페이서를 걷어내며 스크롤 위치를 0으로 되돌려(둘이 상쇄되어 화면은
+   그대로 유지) 이후 사용자가 위로 스크롤해도 빈 여백이 남지 않게 한다. */
+#landingSpacer {
+  height: 0;
 }
 
 /* 1~3위 변동 시: 기존 시상대가 산산조각나며 사라지고(shatter), 새 시상대가 위에서
@@ -780,13 +766,5 @@ details.settings summary {
   .podium.impact { animation: none; }
   .podium.impact::after { display: none; }
   .landing-fade { animation: none; opacity: 1; transform: none; }
-  section.card.landing-hidden {
-    max-height: none;
-    opacity: 1;
-    overflow: visible;
-    padding-top: var(--space-5);
-    padding-bottom: var(--space-5);
-    border-color: var(--rule);
-  }
-  .landing-collapsible { transition: none; }
+  #landingSpacer { height: 0 !important; }
 }
