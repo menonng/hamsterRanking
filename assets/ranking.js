@@ -9,14 +9,14 @@ const RAW_DATA_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/$
 const FALLBACK_DATA_URL = "./data/records.json";
 const POLL_INTERVAL_MS = 4000;
 const PALETTE = [
-    "#FF0045",
-    "#FF7E00",
-    "#FFCC11",
-    "#55BB44",
-    "#39C5BB",
-    "#3355BB",
-    "#660099",
-    "#FFB4CC",
+    "oklch(62% 0.19 25)",
+    "oklch(66% 0.17 55)",
+    "oklch(74% 0.15 95)",
+    "oklch(64% 0.14 150)",
+    "oklch(62% 0.13 200)",
+    "oklch(56% 0.17 250)",
+    "oklch(52% 0.18 300)",
+    "oklch(66% 0.16 340)",
 ];
 const MEDAL_COLORS = ["var(--medal-gold)", "var(--medal-silver)", "var(--medal-bronze)"];
 const MEDALS = ["🥇", "🥈", "🥉"];
