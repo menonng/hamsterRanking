@@ -146,19 +146,17 @@ header.top h1 {
 }
 
 .brand-ascii {
-  margin: 0;
-  font-family: var(--font-mono);
-  /* 풀블록(█) 한 종류만 쓰는 도트 폰트라 폰트 대체가 일어나도 글자 폭이 어긋나
-     깨질 일이 없다(이전엔 굵기가 다른 박스 드로잉 문자 ╗╔╝╚═를 섞어 쓰다가 기기별
-     폰트 대체 시 정렬이 어긋났었다). 그래서 별도 확대 트릭 없이 font-size만으로
-     반응형 크기를 준다. */
-  font-size: clamp(6.5px, 2.2vw, 25px);
-  line-height: 1.1;
-  white-space: pre;
-  letter-spacing: 0;
+  /* 텍스트/폰트에 전혀 의존하지 않는 순수 벡터(rect 격자)라 기기·폰트에 따라
+     글자 폭이 어긋나 깨지는 문제 자체가 생길 수 없다(이전엔 글꼴 문자를 썼다가
+     기기별 폰트 대체 과정에서 정렬이 어긋났었다). viewBox 비율을 그대로 유지한 채
+     너비만 반응형으로 주면 높이는 자동으로 맞춰진다. */
+  display: block;
+  width: clamp(160px, 62vw, 640px);
+  height: auto;
   color: var(--color-accent);
-  max-width: 100%;
-  overflow-x: auto;
+}
+.brand-ascii rect {
+  fill: currentColor;
 }
 
 .header-right {

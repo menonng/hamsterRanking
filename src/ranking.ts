@@ -431,7 +431,6 @@ function initLanding(): void {
   const runLandingSequence = (): void => {
     const FADE_MS = 700; // .landing-fade 애니메이션 길이와 동일하게 맞춘다
     const HOLD_MS = 750; // 요청된 "페이드인 종료 0.75초 뒤" 대기 시간
-    const SCROLL_FALLBACK_MS = 700; // scrollend 미지원 브라우저 대비 안전값
 
     // 시상대 아래 남는 뷰포트 공간만큼 스페이서를 채워, 접속 직후엔 타이틀+1~3위까지만
     // 보이도록 자른다.
@@ -440,21 +439,29 @@ function initLanding(): void {
     spacer.style.height = `${remaining}px`;
 
     window.setTimeout(() => {
-      let done = false;
       const finishReveal = (): void => {
-        if (done) return;
-        done = true;
         // 스페이서를 걷어내는 동시에 스크롤 위치를 0으로 되돌린다 — 방금 스크롤해서
         // 내려온 만큼을 스페이서 제거로 다시 끌어올리는 셈이라 화면은 그대로 유지되고,
         // 이후 사용자가 위로 스크롤해도 빈 여백이 남지 않는다.
         spacer.style.height = "0px";
         window.scrollTo(0, 0);
       };
-      // scrollend 미지원 브라우저(구형 Safari 등)에서도 리스너 등록 자체는 무해하므로,
-      // 리스너와 타임아웃 둘 다 걸어두고 먼저 발생하는 쪽을 쓴다.
-      window.addEventListener("scrollend", finishReveal, { once: true });
-      window.setTimeout(finishReveal, SCROLL_FALLBACK_MS);
+      // 스크롤이 실제로 목표 지점(remaining)에 도달했는지 매 프레임 직접 확인한다.
+      // 타이머나 scrollend 이벤트에만 의존하면, 기기에 따라 smooth 스크롤이 채
+      // 끝나기 전에 먼저 발동해 화면이 원래대로 튕겨 돌아가 버리는 문제가 있었다.
+      const scrollStartedAt = Date.now();
+      const MAX_WAIT_MS = 2500; // 스크롤이 끝내 목표에 못 미쳐도 무한정 기다리지 않는다
+      const waitForScrollEnd = (): void => {
+        const reachedTarget = window.scrollY >= remaining - 2;
+        const timedOut = Date.now() - scrollStartedAt > MAX_WAIT_MS;
+        if (reachedTarget || timedOut) {
+          finishReveal();
+        } else {
+          requestAnimationFrame(waitForScrollEnd);
+        }
+      };
       window.scrollTo({ top: remaining, behavior: "smooth" });
+      requestAnimationFrame(waitForScrollEnd);
     }, FADE_MS + HOLD_MS);
   };
 
