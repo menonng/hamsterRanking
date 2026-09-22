@@ -151,7 +151,7 @@ header.top h1 {
      기기별 폰트 대체 과정에서 정렬이 어긋났었다). viewBox 비율을 그대로 유지한 채
      너비만 반응형으로 주면 높이는 자동으로 맞춰진다. */
   display: block;
-  width: clamp(160px, 62vw, 640px);
+  width: clamp(220px, 80vw, 860px);
   height: auto;
   color: var(--color-accent);
 }
