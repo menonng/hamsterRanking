@@ -80,6 +80,12 @@ html, body {
   transition: background-color .3s ease, color .3s ease;
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
+  /* 브라우저의 스크롤 앵커링(뷰포트 위쪽 콘텐츠 크기가 바뀌면 스크롤 위치를
+     자동으로 보정하는 기능)이 랜딩 연출의 강제 스크롤과 충돌해, 스크롤이
+     끝난 직후 원래 위치로 도로 튕겨 올라가는 버그의 원인이었다. 이 페이지는
+     시상대 낙하/교체 등 뷰포트 위쪽 콘텐츠가 자주 크기를 바꾸므로 전역으로
+     끈다. */
+  overflow-anchor: none;
 }
 
 body {
