@@ -158,6 +158,11 @@ header.top h1 {
 .brand-ascii rect {
   fill: currentColor;
 }
+.ascii-shadow-color {
+  /* 참고 이미지(ANSI Shadow 스타일)처럼 글자 뒤로 살짝 어긋난 그림자 윤곽이
+     비치도록 — 글자 실루엣 전체를 오프셋+팽창시켜 필터로 그린다. */
+  flood-color: color-mix(in oklch, var(--color-accent) 65%, black);
+}
 
 .header-right {
   display: flex;
