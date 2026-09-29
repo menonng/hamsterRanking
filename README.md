@@ -18,7 +18,7 @@ GitHub Pages로 열면 누구나 랭킹을 볼 수 있습니다. **이 저장소
 | `data/records.txt` | 사람이 읽기 좋은 기록 로그 |
 | `.github/workflows/deploy-pages.yml` | push될 때마다 GitHub Pages에 자동 배포 |
 
-기록 입력 형식(`학교,학년,나이,이름,기록(초),태그`)과 사용법은 [hamsteradmin 저장소](https://github.com/menonng/hamsteradmin)의 README를 참고하세요.
+기록 입력 형식(`학교,이름,기록(초),태그`)과 사용법은 [hamsteradmin 저장소](https://github.com/menonng/hamsteradmin)의 README를 참고하세요.
 
 ## 랭킹 화면 규칙
 

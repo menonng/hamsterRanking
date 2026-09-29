@@ -7,23 +7,21 @@ export const STORAGE_KEYS = {
     fileHandleFlag: "hamsterRanking_fs_linked",
 };
 export const BROADCAST_CHANNEL_NAME = "hamster-ranking-sync";
-/** 학교,학년,나이,이름,기록(초),태그 형식의 한 줄을 파싱한다. */
+/** 학교,이름,기록(초),태그 형식의 한 줄을 파싱한다. */
 export function parseRecordLine(line) {
     const trimmed = line.trim();
     if (!trimmed)
         return null;
     const parts = trimmed.split(",").map((s) => s.trim());
     const school = parts[0] ?? "";
-    const grade = parts[1] ?? "";
-    const age = parts[2] ?? "";
-    const name = parts[3] ?? "";
-    const timeRaw = parts[4] ?? "";
-    const tag = parts[5] ?? "";
+    const name = parts[1] ?? "";
+    const timeRaw = parts[2] ?? "";
+    const tag = parts[3] ?? "";
     const time = Number(timeRaw);
     if (!name || !Number.isFinite(time) || time <= 0) {
         return null;
     }
-    return { school, grade, age, name, time, tag };
+    return { school, name, time, tag };
 }
 export function isAIRecord(record) {
     return record.tag.trim() === "1";
@@ -92,10 +90,10 @@ export function saveLocalRecords(records) {
 }
 export function toTxtLine(r) {
     const tagLabel = isAIRecord(r) ? "AI" : "사람";
-    return `${r.createdAt} | ${r.school} | ${r.grade} | ${r.age} | ${r.name} | ${formatTime(r.time)} | ${tagLabel}`;
+    return `${r.createdAt} | ${r.school} | ${r.name} | ${formatTime(r.time)} | ${tagLabel}`;
 }
 export function recordsToTxt(records) {
-    const header = "# 시각 | 학교 | 학년 | 나이 | 이름 | 기록 | 구분";
+    const header = "# 시각 | 학교 | 이름 | 기록 | 구분";
     const lines = [...records]
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
         .map(toTxtLine);

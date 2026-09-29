@@ -68,8 +68,7 @@ function aiBadge(r) {
         : "";
 }
 function metaLine(r) {
-    const bits = [r.school, r.grade ? `${r.grade}학년` : "", r.age ? `${r.age}세` : ""].filter(Boolean);
-    return bits.join(" · ") || "-";
+    return r.school || "-";
 }
 function podiumCard(r, rank, dropDelayClass, leaderTime) {
     const color = MEDAL_COLORS[rank - 1];

@@ -3,8 +3,6 @@
 export interface RankRecord {
   id: string;
   school: string;
-  grade: string;
-  age: string;
   name: string;
   time: number; // 기록 (초), 낮을수록 상위 랭크
   tag: string; // "1" = 인공지능, 그 외("0", "") = 사람
@@ -25,25 +23,23 @@ export type SyncMessage =
   | { type: "records"; records: RankRecord[] }
   | { type: "ping" };
 
-/** 학교,학년,나이,이름,기록(초),태그 형식의 한 줄을 파싱한다. */
+/** 학교,이름,기록(초),태그 형식의 한 줄을 파싱한다. */
 export function parseRecordLine(line: string): Omit<RankRecord, "id" | "createdAt"> | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
 
   const parts = trimmed.split(",").map((s) => s.trim());
   const school = parts[0] ?? "";
-  const grade = parts[1] ?? "";
-  const age = parts[2] ?? "";
-  const name = parts[3] ?? "";
-  const timeRaw = parts[4] ?? "";
-  const tag = parts[5] ?? "";
+  const name = parts[1] ?? "";
+  const timeRaw = parts[2] ?? "";
+  const tag = parts[3] ?? "";
 
   const time = Number(timeRaw);
   if (!name || !Number.isFinite(time) || time <= 0) {
     return null;
   }
 
-  return { school, grade, age, name, time, tag };
+  return { school, name, time, tag };
 }
 
 export function isAIRecord(record: Pick<RankRecord, "tag">): boolean {
@@ -117,11 +113,11 @@ export function saveLocalRecords(records: RankRecord[]): void {
 
 export function toTxtLine(r: RankRecord): string {
   const tagLabel = isAIRecord(r) ? "AI" : "사람";
-  return `${r.createdAt} | ${r.school} | ${r.grade} | ${r.age} | ${r.name} | ${formatTime(r.time)} | ${tagLabel}`;
+  return `${r.createdAt} | ${r.school} | ${r.name} | ${formatTime(r.time)} | ${tagLabel}`;
 }
 
 export function recordsToTxt(records: RankRecord[]): string {
-  const header = "# 시각 | 학교 | 학년 | 나이 | 이름 | 기록 | 구분";
+  const header = "# 시각 | 학교 | 이름 | 기록 | 구분";
   const lines = [...records]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map(toTxtLine);

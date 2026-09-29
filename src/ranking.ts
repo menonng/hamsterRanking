@@ -85,8 +85,7 @@ function aiBadge(r: RankRecord): string {
 }
 
 function metaLine(r: RankRecord): string {
-  const bits = [r.school, r.grade ? `${r.grade}학년` : "", r.age ? `${r.age}세` : ""].filter(Boolean);
-  return bits.join(" · ") || "-";
+  return r.school || "-";
 }
 
 function podiumCard(r: RankRecord, rank: number, dropDelayClass: boolean, leaderTime: number): string {
