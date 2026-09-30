@@ -496,15 +496,15 @@ function initLanding(): void {
   observer.observe(podiumEl, { childList: true });
 }
 
-// 3·4·6번은 기존(1/7)의 1.5배(3/14)로 높이고, 나머지 네 장은 남은 확률을 균등하게 나눈다(5/56씩).
+// 3·6번은 기존(1/7)의 1.5배(3/14)로 높이고, 나머지 다섯 장은 남은 확률을 균등하게 나눈다(4/35씩).
 const OUTRO_IMAGES: Array<{ file: string; weight: number }> = [
-  { file: "1.jpg", weight: 5 },
-  { file: "2.png", weight: 5 },
-  { file: "3.jpg", weight: 12 },
-  { file: "4.jpg", weight: 12 },
-  { file: "5.jpg", weight: 5 },
-  { file: "6.jpg", weight: 12 },
-  { file: "7.jpg", weight: 5 },
+  { file: "1.jpg", weight: 8 },
+  { file: "2.png", weight: 8 },
+  { file: "3.jpg", weight: 15 },
+  { file: "4.jpg", weight: 8 },
+  { file: "5.jpg", weight: 8 },
+  { file: "6.jpg", weight: 15 },
+  { file: "7.jpg", weight: 8 },
 ];
 
 /** 맨 아래 사진은 새로고침할 때마다 가중치에 따라 무작위로 하나를 보여준다. */
