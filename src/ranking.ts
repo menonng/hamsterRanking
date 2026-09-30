@@ -101,8 +101,9 @@ function aiBadge(r: RankRecord): string {
     : "";
 }
 
+/** 학교가 비어 있으면(AI 등) 빈 줄이나 "-" 대신 아예 표시하지 않는다. */
 function metaLine(r: RankRecord): string {
-  return r.school || "-";
+  return r.school.trim();
 }
 
 /** 순위표의 한 자리: 기록 + 표시 순위(동점이면 같은 순위) + 공동 여부. */
@@ -144,7 +145,7 @@ function podiumCard(p: Placed, rank: number, dropDelayClass: boolean, leaderTime
       <div class="podium-top">
         <div class="medal">${MEDALS[p.place - 1] ?? MEDALS[rank - 1]}</div>${tie}
         <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
-        <div class="podium-meta">${escapeHtml(metaLine(r))}</div>
+        ${metaLine(r) ? `<div class="podium-meta">${escapeHtml(metaLine(r))}</div>` : ""}
         <div class="podium-time">${formatTime(r.time)}</div>
         ${gap}
       </div>
@@ -166,7 +167,7 @@ function listRow(p: Placed, slot: number, isNew: boolean, colored: boolean, lead
     <div class="${cls}" style="${style}" data-id="${r.id}">
       <span class="row-rank"${title}>${p.place}</span>
       <span class="row-name">${escapeHtml(r.name)}${aiBadge(r)}</span>
-      <span class="row-meta">${escapeHtml(metaLine(r))}</span>
+      <span class="row-meta${metaLine(r) ? "" : " empty"}">${escapeHtml(metaLine(r))}</span>
       <span class="row-time-wrap">
         <span class="row-time">${formatTime(r.time)}</span>
         <span class="row-gap">${gapText(r.time, leaderTime)}</span>

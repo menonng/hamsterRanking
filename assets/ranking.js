@@ -96,8 +96,9 @@ function aiBadge(r) {
         ? `<span class="ai-badge" title="인공지능 기록">🤖 AI</span>`
         : "";
 }
+/** 학교가 비어 있으면(AI 등) 빈 줄이나 "-" 대신 아예 표시하지 않는다. */
 function metaLine(r) {
-    return r.school || "-";
+    return r.school.trim();
 }
 /** 동점자는 같은 순위(1, 2, 2, 4 …)로 매긴다. 정렬 순서(먼저 등록한 사람이 위)는 그대로. */
 function placeAll(sorted) {
@@ -128,7 +129,7 @@ function podiumCard(p, rank, dropDelayClass, leaderTime) {
       <div class="podium-top">
         <div class="medal">${MEDALS[p.place - 1] ?? MEDALS[rank - 1]}</div>${tie}
         <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
-        <div class="podium-meta">${escapeHtml(metaLine(r))}</div>
+        ${metaLine(r) ? `<div class="podium-meta">${escapeHtml(metaLine(r))}</div>` : ""}
         <div class="podium-time">${formatTime(r.time)}</div>
         ${gap}
       </div>
@@ -147,7 +148,7 @@ function listRow(p, slot, isNew, colored, leaderTime) {
     <div class="${cls}" style="${style}" data-id="${r.id}">
       <span class="row-rank"${title}>${p.place}</span>
       <span class="row-name">${escapeHtml(r.name)}${aiBadge(r)}</span>
-      <span class="row-meta">${escapeHtml(metaLine(r))}</span>
+      <span class="row-meta${metaLine(r) ? "" : " empty"}">${escapeHtml(metaLine(r))}</span>
       <span class="row-time-wrap">
         <span class="row-time">${formatTime(r.time)}</span>
         <span class="row-gap">${gapText(r.time, leaderTime)}</span>
