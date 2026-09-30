@@ -483,6 +483,16 @@ function initLanding(): void {
   observer.observe(podiumEl, { childList: true });
 }
 
+const OUTRO_IMAGES = ["1.jpg", "2.png", "3.jpg", "4.jpg", "5.jpg"];
+
+/** 맨 아래 사진은 새로고침할 때마다 무작위로 하나를 보여준다. */
+function initOutro(): void {
+  const img = document.getElementById("outroImg") as HTMLImageElement | null;
+  if (!img) return;
+  const pick = OUTRO_IMAGES[Math.floor(Math.random() * OUTRO_IMAGES.length)] as string;
+  img.src = `./assets/hamsters/${pick}`;
+}
+
 function applyTheme(theme: "light" | "dark"): void {
   document.documentElement.setAttribute("data-theme", theme);
   els.themeToggle.setAttribute("aria-pressed", String(theme === "dark"));
@@ -501,6 +511,7 @@ function initTheme(): void {
 }
 
 initTheme();
+initOutro();
 initLanding();
 void render(getCombined());
 listenLocalUpdates();

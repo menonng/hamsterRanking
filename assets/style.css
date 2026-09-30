@@ -458,6 +458,39 @@ section.card {
   color: #fff;
 }
 
+/* ---------- 맨 아래 깜짝 푸터 ---------- */
+
+.outro {
+  margin-top: 600px;
+  padding-bottom: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+.outro-frame {
+  width: min(80vw, 320px);
+  height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.outro-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+.outro-comment {
+  margin: 0;
+  text-align: center;
+  font-family: "GulimChe", "굴림체", "Gulim", "굴림", monospace;
+  font-weight: bold;
+  line-height: 1.6;
+  color: #000;
+}
+:root[data-theme="dark"] .outro-comment { color: #fff; }
+
 /* ---------- 빈 상태 ---------- */
 
 .empty-state {

@@ -26,6 +26,16 @@ export function parseRecordLine(line) {
 export function isAIRecord(record) {
     return record.tag.trim() === "1";
 }
+/** 사람(비-AI) 기록은 이름 2번째 글자(인덱스 1)를 *로 가린다. 이미 가려진 이름에 다시 적용해도 결과가 같다. */
+export function maskHumanName(record) {
+    if (isAIRecord(record) || record.name.length < 2)
+        return record.name;
+    return record.name.slice(0, 1) + "*" + record.name.slice(2);
+}
+/** 저장된 기록을 현재 스키마로 정리한다: 이름 마스킹 + 더 이상 쓰지 않는 필드(학년/나이 등) 제거. */
+export function normalizeRecord(r) {
+    return { id: r.id, school: r.school, name: maskHumanName(r), time: r.time, tag: r.tag, createdAt: r.createdAt };
+}
 function trimTrailingZeros(fixed) {
     return fixed.includes(".") ? fixed.replace(/0+$/, "").replace(/\.$/, "") : fixed;
 }
@@ -61,7 +71,7 @@ export function mergeRecords(a, b) {
     for (const r of [...a, ...b]) {
         const existing = map.get(r.id);
         if (!existing || r.createdAt >= existing.createdAt) {
-            map.set(r.id, r);
+            map.set(r.id, normalizeRecord(r));
         }
     }
     return sortRecords([...map.values()]);
@@ -74,7 +84,7 @@ export function loadLocalRecords() {
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed))
             return [];
-        return parsed;
+        return parsed.map(normalizeRecord);
     }
     catch {
         return [];
