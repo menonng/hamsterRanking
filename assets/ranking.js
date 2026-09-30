@@ -20,7 +20,7 @@ const PALETTE = [
 ];
 const MEDAL_COLORS = ["var(--medal-gold)", "var(--medal-silver)", "var(--medal-bronze)"];
 const MEDALS = ["🥇", "🥈", "🥉"];
-// 프로토타입: 1~3위 메달 이모지 대신 도형 조합(primitive) 트로피를 쓴다. false로 바꾸면 이전 모습으로 돌아간다.
+// 프로토타입: 1~3위 "단" 자체를 도형 조합(primitive) 트로피로 그린다. false로 바꾸면 이전 모습으로 돌아간다.
 const TROPHY_PODIUM = true;
 const TROPHY_FILES = ["gold.svg", "silver.svg", "bronze.svg"];
 const REST_GROUP_SIZE = 10; // 11위 이하는 10명씩 박스를 나눈다
@@ -75,20 +75,20 @@ function metaLine(r) {
 }
 function podiumCard(r, rank, dropDelayClass, leaderTime) {
     const color = MEDAL_COLORS[rank - 1];
-    const cls = `podium-card rank-${rank}${dropDelayClass ? " drop" : ""}`;
+    const cls = `podium-card rank-${rank}${TROPHY_PODIUM ? " trophy" : ""}${dropDelayClass ? " drop" : ""}`;
     const gap = rank > 1 ? `<div class="podium-gap">${formatGap(r.time - leaderTime)}</div>` : "";
     return `
     <div class="${cls}" style="--accent:${color}" data-id="${r.id}" data-rank="${rank}">
       <div class="podium-top">
-        <div class="medal">${TROPHY_PODIUM
-        ? `<img class="trophy" src="./assets/trophy/${TROPHY_FILES[rank - 1]}" alt="${rank}위 트로피" />`
-        : MEDALS[rank - 1]}</div>
+        <div class="medal">${MEDALS[rank - 1]}</div>
         <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
         <div class="podium-meta">${escapeHtml(metaLine(r))}</div>
         <div class="podium-time">${formatTime(r.time)}</div>
         ${gap}
       </div>
-      <div class="podium-step">${rank}</div>
+      <div class="podium-step">${TROPHY_PODIUM
+        ? `<img class="trophy-step" src="./assets/trophy/${TROPHY_FILES[rank - 1]}" alt="" /><span class="podium-num">${rank}</span>`
+        : rank}</div>
     </div>`;
 }
 function listRow(r, rank, isNew, colored, leaderTime) {

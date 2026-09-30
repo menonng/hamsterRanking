@@ -343,13 +343,6 @@ section.card {
   line-height: 1;
   margin-bottom: 4px;
 }
-.medal .trophy {
-  display: block;
-  margin: 0 auto;
-  height: calc(clamp(52px, 15vw, 104px) * var(--tier));
-  width: auto;
-  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.22));
-}
 .podium-name {
   font-weight: 800;
   font-size: calc(clamp(13px, 3.6vw, 19px) * var(--tier));
@@ -409,6 +402,51 @@ section.card {
 .podium-card.rank-1 .podium-step { height: clamp(64px, 16vw, 100px); }
 .podium-card.rank-2 .podium-step { height: clamp(46px, 12vw, 72px); }
 .podium-card.rank-3 .podium-step { height: clamp(34px, 9vw, 56px); }
+
+/* ---------- 트로피 단상 (프로토타입, TROPHY_PODIUM) ---------- */
+/* 단(step) 자체가 트로피 모양: 순위별로 트로피 높이가 달라 1위가 가장 크다. */
+.podium-card.trophy.rank-1 { --th: clamp(130px, 34vw, 230px); }
+.podium-card.trophy.rank-2 { --th: clamp(96px, 25vw, 170px); }
+.podium-card.trophy.rank-3 { --th: clamp(70px, 18vw, 122px); }
+.podium-card.trophy {
+  background: none;
+  border: none;
+  overflow: visible;
+}
+.podium-card.trophy .podium-top {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+.podium-card.trophy .podium-step,
+.podium-card.trophy.rank-1 .podium-step,
+.podium-card.trophy.rank-2 .podium-step,
+.podium-card.trophy.rank-3 .podium-step {
+  position: relative;
+  height: var(--th);
+  margin-top: 6px;
+  background: none;
+  display: flex;
+  justify-content: center;
+}
+.podium-card.trophy .podium-step::after { display: none; }
+.podium-card.trophy .trophy-step {
+  height: 100%;
+  width: auto;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.22));
+}
+.podium-card.trophy .podium-num {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: calc(var(--th) * 0.2);
+  line-height: 1;
+  color: rgba(74, 44, 0, 0.85);
+}
 
 /* ---------- 4~10위 / 11위 이하 리스트 ---------- */
 
