@@ -1,5 +1,5 @@
 // 공개 랭킹 화면 — GitHub Pages로 열람하는 모든 사람이 보는 읽기 전용 화면.
-import { BROADCAST_CHANNEL_NAME, formatGap, formatTime, isAIRecord, loadLocalRecords, mergeRecords, sortRecords, } from "./common.js";
+import { formatGap, formatTime, isAIRecord, normalizeRecords, sortRecords } from "./common.js?v=495fa8ccd8";
 // GitHub Pages 자체 배포(빌드+CDN 전파)는 최악의 경우 1분 이상 걸릴 수 있어, 배포를
 // 기다리지 않고 커밋 직후 거의 바로 갱신되는 raw.githubusercontent.com을 우선 사용한다.
 const GH_OWNER = "menonng";
@@ -8,15 +8,15 @@ const GH_BRANCH = "claude/gracious-sagan-mzkdnd";
 const RAW_DATA_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/data/records.json`;
 const FALLBACK_DATA_URL = "./data/records.json";
 const POLL_INTERVAL_MS = 4000;
-const PALETTE = [
-    "oklch(62% 0.19 25)",
-    "oklch(66% 0.17 55)",
-    "oklch(74% 0.15 95)",
-    "oklch(64% 0.14 150)",
-    "oklch(62% 0.13 200)",
-    "oklch(56% 0.17 250)",
-    "oklch(52% 0.18 300)",
-    "oklch(66% 0.16 340)",
+// 4~10위 색: 지정 팔레트를 빨강→보라 무지개 순으로. ink는 배지 위 숫자 색(배경 명도에 맞춤).
+const ROW_COLORS = [
+    { bg: "#FF0045", ink: "#fff" },
+    { bg: "#FF7E00", ink: "#241100" },
+    { bg: "#FFCC11", ink: "#2a2000" },
+    { bg: "#55BB44", ink: "#0c1f08" },
+    { bg: "#39C5BB", ink: "#062421" },
+    { bg: "#3355BB", ink: "#fff" },
+    { bg: "#660099", ink: "#fff" },
 ];
 const MEDAL_COLORS = ["var(--medal-gold)", "var(--medal-silver)", "var(--medal-bronze)"];
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -29,6 +29,42 @@ const PODIUM_DROP_MS = 600 + 160; // 애니메이션 길이 + 3위 stagger 지�
 const IMPACT_MS = 320;
 const STEP_INTERVAL_MS = 5000; // 여러 건이 한번에 들어왔을 때 각 항목 연출 "시작" 사이의 간격
 const THEME_KEY = "hamsterRanking_theme";
+const LOW_PERF_KEY = "hamsterRanking_lowperf";
+// ---- 저사양 모드: 내장 GPU 구형 노트북·몇 년 전 폰에서도 끊기지 않도록 연출 비용을 줄인다 ----
+/** 코어 수·메모리가 적거나 데이터 절약 모드이거나, 이전 파괴 연출이 실제로 느렸던 기기. */
+function detectLowPerf() {
+    const params = new URLSearchParams(location.search);
+    if (params.has("lite"))
+        return true; // 확인용 강제 전환: ?lite = 저사양, ?full = 일반
+    if (params.has("full"))
+        return false;
+    try {
+        if (localStorage.getItem(LOW_PERF_KEY) === "1")
+            return true;
+    }
+    catch {
+        // 저장소 접근 불가 시 하드웨어 정보로만 판단
+    }
+    const nav = navigator;
+    return (nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) <= 4 || nav.connection?.saveData === true;
+}
+let lowPerf = detectLowPerf();
+function applyLowPerfClass() {
+    document.documentElement.classList.toggle("lite", lowPerf);
+}
+/** 실제로 연출이 버벅였던 기기는 다음부터 저사양 모드로 돈다. */
+function markLowPerf() {
+    if (lowPerf || new URLSearchParams(location.search).has("full"))
+        return;
+    lowPerf = true;
+    applyLowPerfClass();
+    try {
+        localStorage.setItem(LOW_PERF_KEY, "1");
+    }
+    catch {
+        // 이번 방문에만 적용
+    }
+}
 // 깨지는 조각 모양(크랙 패턴으로 카드를 쪼갠 폴리곤들)과 각 조각이 튕겨나갈 대략적 방향.
 const SHARD_CLIP_PATHS = [
     "polygon(0% 0%, 45% 0%, 30% 40%, 0% 55%)",
@@ -63,14 +99,34 @@ function aiBadge(r) {
 function metaLine(r) {
     return r.school || "-";
 }
-function podiumCard(r, rank, dropDelayClass, leaderTime) {
+/** 동점자는 같은 순위(1, 2, 2, 4 …)로 매긴다. 정렬 순서(먼저 등록한 사람이 위)는 그대로. */
+function placeAll(sorted) {
+    const out = [];
+    sorted.forEach((r, i) => {
+        const prev = out[i - 1];
+        const place = prev && prev.r.time === r.time ? prev.place : i + 1;
+        const tied = sorted[i - 1]?.time === r.time || sorted[i + 1]?.time === r.time;
+        out.push({ r, place, tied });
+    });
+    return out;
+}
+function gapText(time, leaderTime) {
+    return time - leaderTime <= 0 ? "선두와 동률" : formatGap(time - leaderTime);
+}
+/** 이 카드의 내용이 바뀌었는지 비교하는 키(사람·순위표기·선두와의 차가 같으면 그대로 둔다). */
+function podiumKey(p, leaderTime) {
+    return `${p.r.id}|${p.place}|${p.tied}|${gapText(p.r.time, leaderTime)}`;
+}
+function podiumCard(p, rank, dropDelayClass, leaderTime) {
+    const r = p.r;
     const color = MEDAL_COLORS[rank - 1];
     const cls = `podium-card rank-${rank}${TROPHY_PODIUM ? " trophy" : ""}${dropDelayClass ? " drop" : ""}`;
-    const gap = rank > 1 ? `<div class="podium-gap">${formatGap(r.time - leaderTime)}</div>` : "";
+    const gap = rank > 1 ? `<div class="podium-gap">${gapText(r.time, leaderTime)}</div>` : "";
+    const tie = p.tied ? `<div class="podium-tie">공동 ${p.place}위</div>` : "";
     return `
     <div class="${cls}" style="--accent:${color}" data-id="${r.id}" data-rank="${rank}">
       <div class="podium-top">
-        <div class="medal">${MEDALS[rank - 1]}</div>
+        <div class="medal">${MEDALS[p.place - 1] ?? MEDALS[rank - 1]}</div>${tie}
         <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
         <div class="podium-meta">${escapeHtml(metaLine(r))}</div>
         <div class="podium-time">${formatTime(r.time)}</div>
@@ -81,17 +137,20 @@ function podiumCard(r, rank, dropDelayClass, leaderTime) {
         : rank}</div>
     </div>`;
 }
-function listRow(r, rank, isNew, colored, leaderTime) {
-    const color = colored ? PALETTE[(rank - 1) % PALETTE.length] : "var(--neutral-badge)";
+function listRow(p, slot, isNew, colored, leaderTime) {
+    const r = p.r;
+    const c = colored ? ROW_COLORS[(slot - 4) % ROW_COLORS.length] : undefined;
+    const style = c ? `--accent:${c.bg};--accent-ink:${c.ink}` : "--accent:var(--neutral-badge)";
     const cls = `row${isNew ? " enter" : ""}`;
+    const title = p.tied ? ` title="공동 ${p.place}위"` : "";
     return `
-    <div class="${cls}" style="--accent:${color}" data-id="${r.id}">
-      <span class="row-rank">${rank}</span>
+    <div class="${cls}" style="${style}" data-id="${r.id}">
+      <span class="row-rank"${title}>${p.place}</span>
       <span class="row-name">${escapeHtml(r.name)}${aiBadge(r)}</span>
       <span class="row-meta">${escapeHtml(metaLine(r))}</span>
       <span class="row-time-wrap">
         <span class="row-time">${formatTime(r.time)}</span>
-        <span class="row-gap">${formatGap(r.time - leaderTime)}</span>
+        <span class="row-gap">${gapText(r.time, leaderTime)}</span>
       </span>
     </div>`;
 }
@@ -118,7 +177,22 @@ const GRAVITY = 2600; // px/s²
 const BLAST_DRAG = 0.8; // 1/s — 공기 저항(튀어나가는 속도를 서서히 줄인다)
 const BLAST_RESOLVE_MS = 650; // 이 시간 뒤 새 카드가 떨어지기 시작(파편은 계속 떨어진다)
 const BLAST_MAX_MS = 6000;
-const trophySvgCache = new Map();
+const trophyTemplates = new Map();
+function triangleArea(points) {
+    const [a = [], b = [], c = []] = points.trim().split(/\s+/).map((pt) => pt.split(",").map(Number));
+    const [ax = 0, ay = 0] = a;
+    const [bx = 0, by = 0] = b;
+    const [cx = 0, cy = 0] = c;
+    return Math.abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay)) / 2;
+}
+function parseTrophyTemplate(svgText) {
+    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
+    const svg = document.importNode(doc.documentElement, true);
+    const polys = Array.from(svg.querySelectorAll("g[clip-path] > polygon"));
+    if (polys.length === 0)
+        return null;
+    return { svg, area: polys.map((el) => triangleArea(el.getAttribute("points") ?? "")) };
+}
 /** 트로피 SVG 원본을 미리 받아둔다(부술 때 도형 하나하나를 파편으로 쓰려고 인라인으로 다시 그린다). */
 function prefetchTrophies() {
     if (!TROPHY_PODIUM)
@@ -126,7 +200,11 @@ function prefetchTrophies() {
     for (const file of TROPHY_FILES) {
         fetch(`./assets/trophy/${file}`)
             .then((res) => (res.ok ? res.text() : Promise.reject(new Error(String(res.status)))))
-            .then((text) => trophySvgCache.set(file, text))
+            .then((text) => {
+            const tpl = parseTrophyTemplate(text);
+            if (tpl)
+                trophyTemplates.set(file, tpl);
+        })
             .catch(() => undefined);
     }
 }
@@ -140,16 +218,22 @@ function blastVelocity(px, py, ox, oy) {
     return [Math.cos(theta) * speed, Math.sin(theta) * speed - 250];
 }
 /** `heft`가 클수록 무거운(큰) 파편이라 덜 멀리, 덜 빨리 돈다. */
-function makePiece(cx, cy, ox, oy, apply, heft = 1) {
+function makePiece(cx, cy, ox, oy, el, apply, heft = 1) {
     const [vx, vy] = blastVelocity(cx, cy, ox, oy);
-    return { x: 0, y: 0, vx: vx / heft, vy: vy / heft, angle: 0, spin: ((Math.random() * 2 - 1) * 9) / heft, baseX: cx, baseY: cy, done: false, apply };
+    return { x: 0, y: 0, vx: vx / heft, vy: vy / heft, angle: 0, spin: ((Math.random() * 2 - 1) * 9) / heft, baseX: cx, baseY: cy, done: false, apply, el };
 }
 function runBlast(pieces, layer) {
     const start = performance.now();
     let last = start;
+    let frames = 0;
     const tick = (now) => {
-        const dt = Math.min((now - last) / 1000, 0.033);
+        // 느린 기기(20fps 등)에서도 파편이 슬로모션이 되지 않게 한 프레임을 최대 50ms까지 반영한다.
+        const dt = Math.min((now - last) / 1000, 0.05);
         last = now;
+        frames++;
+        // 처음 12프레임 평균이 40ms(25fps 미만)면 이 기기는 다음부터 저사양 모드로 돈다.
+        if (frames === 12 && (now - start) / 12 > 40 && document.visibilityState === "visible")
+            markLowPerf();
         const k = Math.exp(-BLAST_DRAG * dt);
         const w = window.innerWidth;
         const h = window.innerHeight;
@@ -166,8 +250,10 @@ function runBlast(pieces, layer) {
             p.apply(p);
             const sx = p.baseX + p.x;
             const sy = p.baseY + p.y;
-            if ((sy > h + 160 && p.vy > 0) || sx < -400 || sx > w + 400)
+            if ((sy > h + 160 && p.vy > 0) || sx < -400 || sx > w + 400) {
                 p.done = true;
+                p.el.remove();
+            }
             else
                 alive++;
         }
@@ -186,15 +272,19 @@ function polygonCentroid(clipPath) {
 /** primitive가 만든 삼각형들 중 서로 가까운 2~3개씩 묶어 파편(그룹)으로 만들어 폭발 입자로 등록한다. */
 function spawnTrophyFragments(card, rank, layer, pieces, ox, oy) {
     const img = card.querySelector(".trophy-step");
-    const svgText = trophySvgCache.get(TROPHY_FILES[rank - 1] ?? "");
-    if (!img || !svgText)
+    const tpl = trophyTemplates.get(TROPHY_FILES[rank - 1] ?? "");
+    if (!img || !tpl)
         return false;
     const clipId = `tclip-${rank}-${Math.random().toString(36).slice(2, 8)}`;
-    const doc = new DOMParser().parseFromString(svgText.replace(/id="t"/, `id="${clipId}"`).replace(/url\(#t\)/g, `url(#${clipId})`), "image/svg+xml");
-    const svg = document.importNode(doc.documentElement, true);
-    const polys = Array.from(svg.querySelectorAll("g[clip-path] > polygon"));
-    if (polys.length === 0)
-        return false;
+    const svg = tpl.svg.cloneNode(true);
+    svg.querySelector("clipPath")?.setAttribute("id", clipId);
+    let polys = Array.from(svg.querySelectorAll("g[clip-path] > polygon"));
+    if (lowPerf) {
+        // 저사양: 넓이가 작은 절반가량의 도형은 빼서 파편 수를 절반 가까이로 줄인다(2~3개 묶음 규칙은 그대로).
+        const sortedArea = [...tpl.area].sort((a, b) => a - b);
+        const cutoff = sortedArea[Math.floor(sortedArea.length * 0.45)] ?? 0;
+        polys = polys.filter((_, i) => (tpl.area[i] ?? 0) >= cutoff);
+    }
     const shapes = polys.map((el) => {
         const pts = (el.getAttribute("points") ?? "").trim().split(/\s+/).map((p) => p.split(",").map(Number));
         const cx = pts.reduce((s, p) => s + (p[0] ?? 0), 0) / pts.length;
@@ -236,7 +326,7 @@ function spawnTrophyFragments(card, rank, layer, pieces, ox, oy) {
         const gcy = group.reduce((sum, sh) => sum + sh.cy, 0) / group.length;
         const screenX = imgRect.left + (gcx - vb.x) * scale;
         const screenY = imgRect.top + (gcy - vb.y) * scale;
-        pieces.push(makePiece(screenX, screenY, ox, oy, (p) => {
+        pieces.push(makePiece(screenX, screenY, ox, oy, g, (p) => {
             const deg = (p.angle * 180) / Math.PI;
             g.setAttribute("transform", `translate(${p.x / scale} ${p.y / scale}) rotate(${deg} ${gcx} ${gcy})`);
         }));
@@ -258,10 +348,9 @@ function spawnShatter(card) {
         const pieces = [];
         // 트로피 카드는 정보 박스(podium-top)만 크랙 파편으로, 트로피(단)는 도형 묶음 파편으로 부순다.
         let shardRect = cardRect;
-        if (card.classList.contains("trophy")) {
-            const fragsOk = spawnTrophyFragments(card, Number(card.dataset.rank), layer, pieces, ox, oy);
+        if (card.classList.contains("trophy") && spawnTrophyFragments(card, Number(card.dataset.rank), layer, pieces, ox, oy)) {
             const top = card.querySelector(".podium-top");
-            if (fragsOk && top)
+            if (top)
                 shardRect = top.getBoundingClientRect();
         }
         SHARD_CLIP_PATHS.forEach((clipPath) => {
@@ -277,7 +366,7 @@ function spawnShatter(card) {
             layer.appendChild(shard);
             const cx = shardRect.left + (shardRect.width * px) / 100;
             const cy = shardRect.top + (shardRect.height * py) / 100;
-            pieces.push(makePiece(cx, cy, ox, oy, (p) => {
+            pieces.push(makePiece(cx, cy, ox, oy, shard, (p) => {
                 shard.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${p.angle}rad)`;
             }, 1.8));
         });
@@ -335,15 +424,16 @@ function renderRowLists(sorted) {
     for (const c of rowContainers)
         captureRects(c).forEach((rect, id) => previousRects.set(id, rect));
     const leaderTime = sorted[0]?.time ?? 0;
-    const mid = sorted.slice(3, 10);
-    const rest = sorted.slice(10);
-    els.midList.innerHTML = mid.map((r, i) => listRow(r, i + 4, !previousIds.has(r.id), true, leaderTime)).join("");
+    const placed = placeAll(sorted);
+    const mid = placed.slice(3, 10);
+    const rest = placed.slice(10);
+    els.midList.innerHTML = mid.map((p, i) => listRow(p, i + 4, !previousIds.has(p.r.id), true, leaderTime)).join("");
     els.restGroups.innerHTML = chunk(rest, REST_GROUP_SIZE)
         .map((group, g) => {
         const first = 11 + g * REST_GROUP_SIZE;
         const last = first + group.length - 1;
         const title = first === last ? `${first}위` : `${first}위 ~ ${last}위`;
-        const rows = group.map((r, i) => listRow(r, first + i, !previousIds.has(r.id), false, leaderTime)).join("");
+        const rows = group.map((p, i) => listRow(p, first + i, !previousIds.has(p.r.id), false, leaderTime)).join("");
         return `<section class="card" aria-label="${title}"><h2><span class="h2-icon icon-rest">📋</span>${title}</h2><div>${rows}</div></section>`;
     })
         .join("");
@@ -354,7 +444,8 @@ function prefersReducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 async function renderPodium(top3) {
-    const newTop3Ids = top3.map((r) => r.id);
+    const leaderTime = top3[0]?.r.time ?? 0;
+    const newTop3Ids = top3.map((p) => podiumKey(p, leaderTime));
     const unchanged = newTop3Ids.length === previousTop3Ids.length && newTop3Ids.every((id, i) => id === previousTop3Ids[i]);
     if (unchanged) {
         previousTop3Ids = newTop3Ids;
@@ -362,17 +453,16 @@ async function renderPodium(top3) {
     }
     const priorTop3Ids = previousTop3Ids;
     previousTop3Ids = newTop3Ids;
-    const leaderTime = top3[0]?.time ?? 0;
     if (podiumAnimating || prefersReducedMotion()) {
         // 이미 애니메이션 중이거나 모션 감소 선호 시엔 겹쳐서 재생하지 않고 최신 상태로 스냅.
         els.podium.classList.remove("impact");
-        els.podium.innerHTML = top3.map((r, i) => podiumCard(r, i + 1, false, leaderTime)).join("");
+        els.podium.innerHTML = top3.map((p, i) => podiumCard(p, i + 1, false, leaderTime)).join("");
         return;
     }
     // 자리별로(1/2/3위) 실제로 사람이 바뀐 곳만 골라낸다 — 그대로인 자리는 손대지 않는다.
     const changedRanks = [];
     for (let i = 0; i < Math.max(top3.length, priorTop3Ids.length); i++) {
-        if (top3[i]?.id !== priorTop3Ids[i])
+        if (newTop3Ids[i] !== priorTop3Ids[i])
             changedRanks.push(i + 1);
     }
     if (changedRanks.length === 0)
@@ -418,29 +508,40 @@ async function playPodiumReplace(changedRanks, top3, leaderTime, leadMs = ROW_FL
         podiumAnimating = false;
     }
 }
-/** 확인용: q/w/e 키로 1/2/3위 교체 연출만 재생한다. 실제 순위·데이터는 바뀌지 않는다. */
+/**
+ * 확인용: 주소 끝에 ?preview를 붙여 열었을 때만 q/w/e 키로 1/2/3위 교체 연출을 재생한다.
+ * 실제 순위·데이터는 바뀌지 않는다. 한글 입력 상태에서도 동작하도록 글자가 아닌 키 위치로 판단한다.
+ */
 function initPodiumPreviewKeys() {
-    const keyToRank = { q: 1, w: 2, e: 3 };
+    if (!new URLSearchParams(location.search).has("preview"))
+        return;
+    const codeToRank = { KeyQ: 1, KeyW: 2, KeyE: 3 };
     window.addEventListener("keydown", (ev) => {
-        const rank = keyToRank[ev.key.toLowerCase()];
+        const rank = codeToRank[ev.code];
         if (!rank || ev.ctrlKey || ev.metaKey || ev.altKey || ev.repeat)
             return;
         const target = ev.target;
         if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
             return;
-        if (podiumAnimating || prefersReducedMotion())
+        // 실제 갱신 연출과 같은 잠금을 써서 둘이 겹치지 않게 한다(겹치면 카드가 중복될 수 있다).
+        if (rendering || podiumAnimating || prefersReducedMotion())
             return;
-        const top3 = sortRecords(getCombined()).slice(0, 3);
+        const sorted = sortRecords(remoteRecords);
+        const top3 = placeAll(sorted).slice(0, 3);
         if (!top3[rank - 1])
             return;
-        void playPodiumReplace([rank], top3, top3[0]?.time ?? 0, 0);
+        rendering = true;
+        void playPodiumReplace([rank], top3, sorted[0]?.time ?? 0, 0).finally(() => {
+            rendering = false;
+            void drainPendingRender();
+        });
     });
 }
 async function applyState(sorted) {
     const currentIds = new Set(sorted.map((r) => r.id));
     els.totalCount.textContent = String(sorted.length);
     els.emptyState.style.display = sorted.length === 0 ? "flex" : "none";
-    const top3 = sorted.slice(0, 3);
+    const top3 = placeAll(sorted).slice(0, 3);
     renderRowLists(sorted);
     await renderPodium(top3);
     previousIds = currentIds;
@@ -494,43 +595,45 @@ async function drainPendingRender() {
     pendingRenderData = null;
     await render(next);
 }
-function getCombined() {
-    const local = loadLocalRecords();
-    return mergeRecords(remoteRecords, local);
-}
 async function fetchJson(url) {
     const res = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok)
         throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return Array.isArray(data) ? data : null;
+    if (!Array.isArray(data))
+        throw new Error("records.json 형식 오류");
+    return data;
 }
+let lastSignature = null;
 async function fetchRemote() {
     // raw.githubusercontent.com은 CDN 캐시가 쿼리스트링을 무시하고 최대 5분간 그대로
     // 응답해버려서(no-cache 요청 헤더도 무시됨) "실시간"에는 못 쓴다. 이 저장소의 GitHub
     // Pages 배포본(우리가 직접 트리거하는 배포 시점만큼만 뒤처짐)을 1차로 쓰고,
     // 그마저 안 될 때만 raw를 예비로 시도한다.
+    let data = null;
     try {
-        const data = await fetchJson(FALLBACK_DATA_URL);
-        if (data) {
-            remoteRecords = data;
-            setLive(true);
-        }
+        data = await fetchJson(FALLBACK_DATA_URL);
     }
     catch {
         try {
-            const data = await fetchJson(RAW_DATA_URL);
-            if (data) {
-                remoteRecords = data;
-                setLive(true);
-            }
+            data = await fetchJson(RAW_DATA_URL);
         }
         catch {
-            setLive(false);
+            data = null;
         }
     }
-    void render(getCombined());
+    setLive(data !== null);
+    // 실패했을 땐 "업데이트" 시각을 갱신하지 않는다 — 마지막으로 실제 받아온 시각이 남아 있어야 끊김을 알아챈다.
+    if (data === null)
+        return;
     els.lastSync.textContent = new Date().toLocaleTimeString("ko-KR");
+    const records = normalizeRecords(data);
+    const signature = JSON.stringify(sortRecords(records).map((r) => [r.id, r.name, r.school, r.time, r.tag]));
+    if (signature === lastSignature)
+        return; // 바뀐 게 없으면 다시 그리지 않는다
+    lastSignature = signature;
+    remoteRecords = records;
+    void render(remoteRecords);
 }
 function setLive(ok) {
     els.liveDot.classList.toggle("live-ok", ok);
@@ -546,19 +649,6 @@ function startPolling() {
             fetchRemote();
     });
     window.addEventListener("focus", () => fetchRemote());
-}
-function listenLocalUpdates() {
-    window.addEventListener("storage", (e) => {
-        if (e.key === "hamsterRanking_records_v1")
-            void render(getCombined());
-    });
-    if ("BroadcastChannel" in window) {
-        const bc = new BroadcastChannel(BROADCAST_CHANNEL_NAME);
-        bc.onmessage = (ev) => {
-            if (ev.data?.type === "records")
-                void render(getCombined());
-        };
-    }
 }
 /**
  * 타이틀+1~3위 페이드인이 끝나고 0.75초 뒤, 사용자의 스크롤 위치를 실제로(그냥
@@ -651,20 +741,32 @@ function applyTheme(theme) {
     els.themeThumb.textContent = theme === "dark" ? "🌙" : "☀️";
 }
 function initTheme() {
-    const saved = localStorage.getItem(THEME_KEY);
-    applyTheme(saved === "dark" ? "dark" : "light");
+    let saved = null;
+    try {
+        saved = localStorage.getItem(THEME_KEY);
+    }
+    catch {
+        saved = null;
+    }
+    // 직접 고른 적이 없으면 기기의 다크 모드 설정을 따른다.
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(saved === "dark" || saved === "light" ? saved : systemDark ? "dark" : "light");
     els.themeToggle.addEventListener("click", () => {
         const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-        localStorage.setItem(THEME_KEY, next);
+        try {
+            localStorage.setItem(THEME_KEY, next);
+        }
+        catch {
+            // 저장 불가(프라이빗 모드 등) 시 이번 방문에만 적용
+        }
         applyTheme(next);
     });
 }
+applyLowPerfClass();
 initTheme();
 prefetchTrophies();
 initPodiumPreviewKeys();
 initOutro();
 initLanding();
-void render(getCombined());
-listenLocalUpdates();
 startPolling();
 //# sourceMappingURL=ranking.js.map

@@ -1,9 +1,10 @@
 name: Deploy GitHub Pages
 
 on:
+  # 기록 데이터(admin이 커밋)와 사이트 코드가 모두 이 브랜치에 있다. 다른 브랜치까지 배포하면
+  # 그 브랜치의 오래된 기록/코드로 사이트가 덮어써지므로 이 브랜치 하나만 배포한다.
   push:
     branches:
-      - main
       - claude/gracious-sagan-mzkdnd
   workflow_dispatch:
 

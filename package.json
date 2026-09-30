@@ -4,7 +4,7 @@
   "private": true,
   "description": "축제 햄스터봇 레이싱 랭킹 시스템 (AI vs 사람)",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/stamp.mjs index.html ranking",
     "watch": "tsc -p tsconfig.json --watch"
   },
   "devDependencies": {

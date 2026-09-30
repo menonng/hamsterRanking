@@ -1,26 +1,27 @@
 /* Hallmark · genre: editorial-restrained · macrostructure: custom (live scoreboard) · theme: custom (flat coral/violet, oklch anchor h75) */
 :root {
   /* ---------- 팔레트 (OKLCH, 따뜻한 축제 톤 anchor hue 75) ---------- */
-  --paper: oklch(97% 0.012 75);
-  --paper-2: oklch(94% 0.015 75);
-  --paper-3: oklch(90% 0.018 75);
-  --card: oklch(99% 0.005 75);
-  --ink: oklch(22% 0.02 50);
-  --ink-dim: oklch(47% 0.018 55);
-  --rule: oklch(84% 0.016 75);
-  --neutral-badge: oklch(89% 0.012 75);
+  --paper: #FAF4EC;
+  --paper-2: #F1EAE0;
+  --paper-3: #E5DDD1;
+  --card: #FEFBF8;
+  --ink: #221812;
+  --ink-dim: #635851;
+  --rule: #D1C9BF;
+  --neutral-badge: #DFDAD2;
 
-  --color-accent: oklch(60% 0.18 35);       /* 산호빛 오렌지 */
-  --color-accent-ink: oklch(99% 0.006 35);
-  --color-accent-2: oklch(48% 0.17 300);    /* 바이올렛 — AI 표식 전용 */
-  --color-focus: oklch(65% 0.18 35);
-  --color-success: oklch(60% 0.14 150);
-  --color-warn: oklch(72% 0.14 85);
-  --color-danger: oklch(55% 0.19 25);
+  /* 지정 팔레트: 빨강 #FF0045 · 주황 #FF7E00 · 노랑 #FFCC11 · 초록 #55BB44 · 하늘 #39C5BB · 파랑 #3355BB · 보라 #660099 · 분홍 #FFB4CC */
+  --color-accent: #FF7E00;                  /* 주황 — 타이틀·강조 */
+  --color-accent-ink: #241100;
+  --color-accent-2: #660099;                /* 보라 — AI 표식 전용 */
+  --color-focus: #FF7E00;
+  --color-success: #55BB44;
+  --color-warn: #FFCC11;
+  --color-danger: #FF0045;
 
-  --medal-gold: oklch(76% 0.15 85);
-  --medal-silver: oklch(80% 0.014 260);
-  --medal-bronze: oklch(60% 0.1 45);
+  --medal-gold: #DCA81C;
+  --medal-silver: #B9BEC7;
+  --medal-bronze: #B16C4C;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -46,26 +47,26 @@
 }
 
 :root[data-theme="dark"] {
-  --paper: oklch(17% 0.018 50);
-  --paper-2: oklch(21% 0.02 50);
-  --paper-3: oklch(26% 0.022 50);
-  --card: oklch(20% 0.02 50);
-  --ink: oklch(94% 0.01 75);
-  --ink-dim: oklch(72% 0.014 75);
-  --rule: oklch(31% 0.02 55);
-  --neutral-badge: oklch(30% 0.02 60);
+  --paper: #160D08;
+  --paper-2: #201610;
+  --paper-3: #2D211A;
+  --card: #1E130E;
+  --ink: #EFEAE4;
+  --ink-dim: #AAA49B;
+  --rule: #392E27;
+  --neutral-badge: #362C24;
 
-  --color-accent: oklch(68% 0.17 35);
-  --color-accent-ink: oklch(15% 0.016 35);
-  --color-accent-2: oklch(66% 0.16 300);
-  --color-focus: oklch(72% 0.17 35);
-  --color-success: oklch(66% 0.14 150);
-  --color-warn: oklch(74% 0.14 85);
-  --color-danger: oklch(62% 0.19 25);
+  --color-accent: #FF7E00;
+  --color-accent-ink: #241100;
+  --color-accent-2: #A882CA; /* 보라 #660099를 밝힌 근색(어두운 배경용) */
+  --color-focus: #FF7E00;
+  --color-success: #55BB44;
+  --color-warn: #FFCC11;
+  --color-danger: #FF0045;
 
-  --medal-gold: oklch(80% 0.16 85);
-  --medal-silver: oklch(83% 0.016 260);
-  --medal-bronze: oklch(64% 0.11 45);
+  --medal-gold: #EDB417;
+  --medal-silver: #C1C8D2;
+  --medal-bronze: #C37552;
 }
 
 * { box-sizing: border-box; }
@@ -109,9 +110,8 @@ header.top {
   border-bottom: 1px solid var(--rule);
   position: sticky;
   top: 0;
-  background: color-mix(in oklch, var(--paper) 92%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  /* 배경 흐림(backdrop-filter)은 스크롤할 때마다 다시 계산돼 내장 GPU·구형 폰에서 버벅이므로 쓰지 않는다. */
+  background: color-mix(in oklch, var(--paper) 97%, transparent);
   z-index: 10;
 }
 
@@ -161,7 +161,7 @@ header.top h1 {
   height: auto;
   color: var(--color-accent);
 }
-.brand-ascii rect {
+.brand-ascii path {
   fill: currentColor;
 }
 
@@ -371,6 +371,16 @@ section.card {
   color: var(--ink);
   margin-top: clamp(4px, 2vw, 10px);
 }
+.podium-tie {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  font-size: calc(clamp(9px, 2.4vw, 11px) * var(--tier));
+  font-weight: 800;
+  color: var(--ink);
+  background: color-mix(in oklch, var(--accent) 30%, var(--card));
+}
 .podium-gap {
   font-family: var(--font-mono);
   font-size: calc(clamp(10px, 2.6vw, 13px) * var(--tier));
@@ -471,7 +481,7 @@ section.card {
   height: 30px;
   border-radius: 50%;
   background: var(--accent);
-  color: #12132a;
+  color: var(--accent-ink, var(--ink));
   font-family: var(--font-mono);
   font-weight: 800;
   display: flex;
@@ -483,7 +493,8 @@ section.card {
 .row-name { font-weight: 700; letter-spacing: -0.005em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .row-meta { color: var(--ink-dim); font-size: 12px; text-align: right; }
 .row-time-wrap { display: flex; flex-direction: column; align-items: flex-end; min-width: 64px; }
-.row-time { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.01em; color: var(--accent); text-align: right; }
+/* 밝은 팔레트색(노랑 등)도 글자로 읽히도록 본문색 쪽으로 당긴 근색을 쓴다. */
+.row-time { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.01em; color: color-mix(in oklch, var(--accent) 70%, var(--ink)); text-align: right; }
 .row-gap { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; color: var(--ink-dim); letter-spacing: -0.005em; }
 
 .ai-badge {
@@ -604,10 +615,10 @@ section.card {
   opacity: 0.95;
   will-change: transform;
 }
+/* 트로피 파편(인라인 SVG). 그림자 필터는 매 프레임 비용이 커서 파편에는 쓰지 않는다. */
 .trophy-frags {
   position: fixed;
   overflow: visible;
-  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.22));
 }
 /* 원래 카드(정보 박스·단)는 파편이 생기는 즉시 숨긴다. */
 .podium-card.shatter .podium-top,
@@ -670,6 +681,17 @@ section.card {
   0% { opacity: 0.5; }
   100% { opacity: 0; }
 }
+
+/* 11위 이하 박스는 화면 밖에 있는 동안 그리기를 건너뛴다(참가자가 수백 명이 돼도 스크롤이 가볍게). */
+#restGroups > section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 560px;
+}
+
+/* ---------- 저사양 모드 (html.lite): 구형 노트북·폰에서 계속 도는 효과와 큰 화면 합성을 뺀다 ---------- */
+html.lite .live-dot.live-ok::after { animation: none; display: none; }
+html.lite .podium.impact::after { display: none; }
+html.lite .podium-card.trophy .trophy-step { filter: none; }
 
 /* ---------- 모바일 ---------- */
 
@@ -871,4 +893,17 @@ details.settings summary {
   .podium.impact::after { display: none; }
   .landing-fade { animation: none; opacity: 1; transform: none; }
   #landingSpacer { height: 0 !important; }
+}
+
+/* ---------- 구형 브라우저 대체 색 (color-mix 미지원: iOS 16.1 이하 Safari, Chrome 110 이하 등) ----------
+   var()가 들어간 color-mix는 지원하지 않는 브라우저에서 "값 없음"이 되어 색이 통째로 빠지므로,
+   단순한 색으로 다시 지정한다. */
+@supports not (color: color-mix(in oklch, red, blue)) {
+  ::selection { background: rgba(255, 126, 0, 0.4); }
+  header.top { background: var(--paper); }
+  .podium-tie { background: var(--paper-2); }
+  .row-time { color: var(--ink); }
+  .ai-badge { background: var(--paper-2); color: var(--color-accent-2); border-color: var(--rule); }
+  :root[data-theme="dark"] .ai-badge { background: var(--paper-3); color: #fff; }
+  .form-error { background: var(--paper-2); }
 }

@@ -43,7 +43,7 @@ export function parseRecordLine(line: string): Omit<RankRecord, "id" | "createdA
 }
 
 export function isAIRecord(record: Pick<RankRecord, "tag">): boolean {
-  return record.tag.trim() === "1";
+  return String(record.tag ?? "").trim() === "1";
 }
 
 /** 사람(비-AI) 기록은 이름 2번째 글자(인덱스 1)를 *로 가린다. 이미 가려진 이름에 다시 적용해도 결과가 같다. */
@@ -52,9 +52,32 @@ export function maskHumanName(record: Pick<RankRecord, "name" | "tag">): string 
   return record.name.slice(0, 1) + "*" + record.name.slice(2);
 }
 
-/** 저장된 기록을 현재 스키마로 정리한다: 이름 마스킹 + 더 이상 쓰지 않는 필드(학년/나이 등) 제거. */
-export function normalizeRecord(r: RankRecord): RankRecord {
-  return { id: r.id, school: r.school, name: maskHumanName(r), time: r.time, tag: r.tag, createdAt: r.createdAt };
+/**
+ * 저장된(또는 손으로 고친) 기록을 현재 스키마로 정리한다: 필드 타입 보정, 이름 마스킹,
+ * 더 이상 쓰지 않는 필드(학년/나이 등) 제거. 필수 값이 없거나 기록이 숫자가 아니면 null.
+ */
+export function normalizeRecord(raw: unknown): RankRecord | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const id = String(r.id ?? "").trim();
+  const name = String(r.name ?? "").trim();
+  const time = Number(r.time);
+  if (!id || !name || !Number.isFinite(time) || time <= 0) return null;
+  const record: RankRecord = {
+    id,
+    school: String(r.school ?? "").trim(),
+    name,
+    time,
+    tag: String(r.tag ?? "").trim(),
+    createdAt: String(r.createdAt ?? ""),
+  };
+  return { ...record, name: maskHumanName(record) };
+}
+
+/** 배열이 아니면 빈 목록, 잘못된 항목은 조용히 버린다. */
+export function normalizeRecords(list: unknown): RankRecord[] {
+  if (!Array.isArray(list)) return [];
+  return list.map(normalizeRecord).filter((r): r is RankRecord => r !== null);
 }
 
 function trimTrailingZeros(fixed: string): string {
@@ -93,11 +116,9 @@ export function sortRecords(records: RankRecord[]): RankRecord[] {
 /** id 기준으로 두 기록 목록을 병합한다. 동일 id는 최신(createdAt) 쪽을 채택. */
 export function mergeRecords(a: RankRecord[], b: RankRecord[]): RankRecord[] {
   const map = new Map<string, RankRecord>();
-  for (const r of [...a, ...b]) {
+  for (const r of normalizeRecords([...a, ...b])) {
     const existing = map.get(r.id);
-    if (!existing || r.createdAt >= existing.createdAt) {
-      map.set(r.id, normalizeRecord(r));
-    }
+    if (!existing || r.createdAt >= existing.createdAt) map.set(r.id, r);
   }
   return sortRecords([...map.values()]);
 }
@@ -106,9 +127,7 @@ export function loadLocalRecords(): RankRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.records);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return (parsed as RankRecord[]).map(normalizeRecord);
+    return normalizeRecords(JSON.parse(raw));
   } catch {
     return [];
   }
