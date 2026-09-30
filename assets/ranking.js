@@ -453,14 +453,25 @@ function initLanding() {
     });
     observer.observe(podiumEl, { childList: true });
 }
-const OUTRO_IMAGES = ["1.jpg", "2.png", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg"];
-/** 맨 아래 사진은 새로고침할 때마다 무작위로 하나를 보여준다. */
+// 3·4·6번은 기존(1/7)의 1.5배(3/14)로 높이고, 나머지 네 장은 남은 확률을 균등하게 나눈다(5/56씩).
+const OUTRO_IMAGES = [
+    { file: "1.jpg", weight: 5 },
+    { file: "2.png", weight: 5 },
+    { file: "3.jpg", weight: 12 },
+    { file: "4.jpg", weight: 12 },
+    { file: "5.jpg", weight: 5 },
+    { file: "6.jpg", weight: 12 },
+    { file: "7.jpg", weight: 5 },
+];
+/** 맨 아래 사진은 새로고침할 때마다 가중치에 따라 무작위로 하나를 보여준다. */
 function initOutro() {
     const img = document.getElementById("outroImg");
     if (!img)
         return;
-    const pick = OUTRO_IMAGES[Math.floor(Math.random() * OUTRO_IMAGES.length)];
-    img.src = `./assets/hamsters/${pick}`;
+    const total = OUTRO_IMAGES.reduce((sum, i) => sum + i.weight, 0);
+    let roll = Math.random() * total;
+    const pick = OUTRO_IMAGES.find((i) => (roll -= i.weight) < 0) ?? OUTRO_IMAGES[0];
+    img.src = `./assets/hamsters/${pick?.file}`;
 }
 function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
