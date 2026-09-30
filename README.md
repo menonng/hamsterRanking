@@ -60,3 +60,5 @@ python3 -m http.server 8000
 1~3위 카드의 메달 이모지를 [fogleman/primitive](https://github.com/fogleman/primitive)(MIT, © 2016 Michael Fogleman)로 만든
 도형 조합 트로피(`assets/trophy/*.svg`)로 바꿨다. primitive는 저장소에 포함하거나 포크하지 않고, 별도로 실행해 생성한 결과 이미지만 사용한다.
 이전 모습으로 되돌리려면 `src/ranking.ts`의 `TROPHY_PODIUM`을 `false`로 바꾸고 다시 빌드하거나, 이 기능 커밋 하나를 `git revert` 하면 된다.
+
+**연출 확인용 단축키**: 랭킹 화면에서 `q` / `w` / `e`를 누르면 1 / 2 / 3위 카드가 부서졌다 다시 떨어지는 교체 연출만 재생된다(실제 순위·데이터는 그대로).

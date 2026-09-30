@@ -360,18 +360,28 @@ async function renderPodium(top3: RankRecord[]): Promise<void> {
     return;
   }
 
-  const existingCardsByRank = new Map<number, HTMLElement>();
-  els.podium.querySelectorAll<HTMLElement>(".podium-card").forEach((c) => {
-    const rank = Number(c.dataset.rank);
-    if (rank) existingCardsByRank.set(rank, c);
-  });
-
   // 자리별로(1/2/3위) 실제로 사람이 바뀐 곳만 골라낸다 — 그대로인 자리는 손대지 않는다.
   const changedRanks: number[] = [];
   for (let i = 0; i < Math.max(top3.length, priorTop3Ids.length); i++) {
     if (top3[i]?.id !== priorTop3Ids[i]) changedRanks.push(i + 1);
   }
   if (changedRanks.length === 0) return;
+
+  await playPodiumReplace(changedRanks, top3, leaderTime);
+}
+
+/** 지정한 자리의 카드를 부순 뒤 top3의 해당 자리 기록으로 새 카드를 떨어뜨린다. */
+async function playPodiumReplace(
+  changedRanks: number[],
+  top3: RankRecord[],
+  leaderTime: number,
+  leadMs = ROW_FLIP_MS,
+): Promise<void> {
+  const existingCardsByRank = new Map<number, HTMLElement>();
+  els.podium.querySelectorAll<HTMLElement>(".podium-card").forEach((c) => {
+    const rank = Number(c.dataset.rank);
+    if (rank) existingCardsByRank.set(rank, c);
+  });
 
   podiumAnimating = true;
   try {
@@ -380,7 +390,7 @@ async function renderPodium(top3: RankRecord[]): Promise<void> {
       .filter((c): c is HTMLElement => !!c);
 
     if (cardsToShatter.length > 0) {
-      await delay(ROW_FLIP_MS);
+      if (leadMs > 0) await delay(leadMs);
       await Promise.all(cardsToShatter.map((c) => spawnShatter(c)));
     }
     cardsToShatter.forEach((c) => c.remove());
@@ -403,6 +413,21 @@ async function renderPodium(top3: RankRecord[]): Promise<void> {
   } finally {
     podiumAnimating = false;
   }
+}
+
+/** 확인용: q/w/e 키로 1/2/3위 교체 연출만 재생한다. 실제 순위·데이터는 바뀌지 않는다. */
+function initPodiumPreviewKeys(): void {
+  const keyToRank: Record<string, number> = { q: 1, w: 2, e: 3 };
+  window.addEventListener("keydown", (ev) => {
+    const rank = keyToRank[ev.key.toLowerCase()];
+    if (!rank || ev.ctrlKey || ev.metaKey || ev.altKey || ev.repeat) return;
+    const target = ev.target as HTMLElement | null;
+    if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+    if (podiumAnimating || prefersReducedMotion()) return;
+    const top3 = sortRecords(getCombined()).slice(0, 3);
+    if (!top3[rank - 1]) return;
+    void playPodiumReplace([rank], top3, top3[0]?.time ?? 0, 0);
+  });
 }
 
 async function applyState(sorted: RankRecord[]): Promise<void> {
@@ -644,6 +669,7 @@ function initTheme(): void {
 
 initTheme();
 prefetchTrophies();
+initPodiumPreviewKeys();
 initOutro();
 initLanding();
 void render(getCombined());
