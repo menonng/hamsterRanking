@@ -440,7 +440,7 @@ function initLanding() {
     });
     observer.observe(podiumEl, { childList: true });
 }
-const OUTRO_IMAGES = ["1.jpg", "2.png", "3.jpg", "4.jpg", "5.jpg"];
+const OUTRO_IMAGES = ["1.jpg", "2.png", "3.jpg", "4.jpg", "5.jpg", "6.jpg", "7.jpg"];
 /** 맨 아래 사진은 새로고침할 때마다 무작위로 하나를 보여준다. */
 function initOutro() {
     const img = document.getElementById("outroImg");
