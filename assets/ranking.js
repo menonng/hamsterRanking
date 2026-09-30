@@ -188,36 +188,34 @@ const GRAVITY = 2600; // px/s²
 const BLAST_DRAG = 0.8; // 1/s — 공기 저항(튀어나가는 속도를 서서히 줄인다)
 const BLAST_RESOLVE_MS = 650; // 이 시간 뒤 새 카드가 떨어지기 시작(파편은 계속 떨어진다)
 const BLAST_MAX_MS = 6000;
-const trophyTemplates = new Map();
-function triangleArea(points) {
-    const [a = [], b = [], c = []] = points.trim().split(/\s+/).map((pt) => pt.split(",").map(Number));
-    const [ax = 0, ay = 0] = a;
-    const [bx = 0, by = 0] = b;
-    const [cx = 0, cy = 0] = c;
-    return Math.abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay)) / 2;
-}
-function parseTrophyTemplate(svgText) {
-    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
-    const svg = document.importNode(doc.documentElement, true);
-    const polys = Array.from(svg.querySelectorAll("g[clip-path] > polygon"));
-    if (polys.length === 0)
-        return null;
-    return { svg, area: polys.map((el) => triangleArea(el.getAttribute("points") ?? "")) };
-}
-/** 트로피 SVG 원본을 미리 받아둔다(부술 때 도형 하나하나를 파편으로 쓰려고 인라인으로 다시 그린다). */
+const TROPHY_FRAG_VERSION = "1"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
+const trophyFragData = new Map();
+const trophyFragImages = new Map();
+/** 파편 데이터와 트로피 그림을 미리 받아둔다(첫 화면 로딩을 방해하지 않게 한가할 때). */
 function prefetchTrophies() {
     if (!TROPHY_PODIUM)
         return;
-    for (const file of TROPHY_FILES) {
-        fetch(`./assets/trophy/${file}`)
-            .then((res) => (res.ok ? res.text() : Promise.reject(new Error(String(res.status)))))
-            .then((text) => {
-            const tpl = parseTrophyTemplate(text);
-            if (tpl)
-                trophyTemplates.set(file, tpl);
+    const load = () => {
+        fetch(`./assets/trophy/fragments.json?v=${TROPHY_FRAG_VERSION}`)
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+            .then((data) => {
+            for (const file of TROPHY_FILES) {
+                const entry = data[file];
+                if (!entry || !Array.isArray(entry.frags) || entry.frags.length === 0)
+                    continue;
+                trophyFragData.set(file, entry);
+                const image = new Image();
+                image.decoding = "async";
+                image.src = `./assets/trophy/${entry.png}?v=${TROPHY_FRAG_VERSION}`;
+                trophyFragImages.set(file, image);
+            }
         })
             .catch(() => undefined);
-    }
+    };
+    if ("requestIdleCallback" in window)
+        window.requestIdleCallback(load, { timeout: 4000 });
+    else
+        setTimeout(load, 1500);
 }
 /** 폭발 중심에서 파편까지의 방향으로 튀어나가는 초기 속도. 중심에 가까운 파편일수록 더 세게 맞는다. */
 function blastVelocity(px, py, ox, oy) {
@@ -280,68 +278,56 @@ function polygonCentroid(clipPath) {
     const n = pts.length || 1;
     return [pts.reduce((s, p) => s + p[0], 0) / n, pts.reduce((s, p) => s + p[1], 0) / n];
 }
-/** primitive가 만든 삼각형들 중 서로 가까운 2~3개씩 묶어 파편(그룹)으로 만들어 폭발 입자로 등록한다. */
+const SVG_NS = "http://www.w3.org/2000/svg";
+const XLINK_NS = "http://www.w3.org/1999/xlink";
+/** 트로피를 그린 도형 기반의 파편들로 트로피(단)를 부순다. 데이터·그림이 아직 없으면 false. */
 function spawnTrophyFragments(card, rank, layer, pieces, ox, oy) {
     const img = card.querySelector(".trophy-step");
-    const tpl = trophyTemplates.get(TROPHY_FILES[rank - 1] ?? "");
-    if (!img || !tpl)
+    const file = TROPHY_FILES[rank - 1] ?? "";
+    const data = trophyFragData.get(file);
+    const art = trophyFragImages.get(file);
+    if (!img || !data || !art || !art.complete || art.naturalWidth === 0)
         return false;
-    const clipId = `tclip-${rank}-${Math.random().toString(36).slice(2, 8)}`;
-    const svg = tpl.svg.cloneNode(true);
-    svg.querySelector("clipPath")?.setAttribute("id", clipId);
-    let polys = Array.from(svg.querySelectorAll("g[clip-path] > polygon"));
-    if (lowPerf) {
-        // 저사양: 넓이가 작은 절반가량의 도형은 빼서 파편 수를 절반 가까이로 줄인다(2~3개 묶음 규칙은 그대로).
-        const sortedArea = [...tpl.area].sort((a, b) => a - b);
-        const cutoff = sortedArea[Math.floor(sortedArea.length * 0.45)] ?? 0;
-        polys = polys.filter((_, i) => (tpl.area[i] ?? 0) >= cutoff);
-    }
-    const shapes = polys.map((el) => {
-        const pts = (el.getAttribute("points") ?? "").trim().split(/\s+/).map((p) => p.split(",").map(Number));
-        const cx = pts.reduce((s, p) => s + (p[0] ?? 0), 0) / pts.length;
-        const cy = pts.reduce((s, p) => s + (p[1] ?? 0), 0) / pts.length;
-        return { el, cx, cy };
-    });
-    const imgRect = img.getBoundingClientRect();
-    const vb = svg.viewBox.baseVal;
-    const scale = imgRect.width / vb.width;
-    svg.setAttribute("width", String(imgRect.width));
-    svg.setAttribute("height", String(imgRect.height));
+    // <img>는 SVG를 비율 유지(가운데 정렬)로 그리므로 같은 방식으로 화면 좌표를 맞춘다.
+    const [vx, vy, vw, vh] = data.vb;
+    const rect = img.getBoundingClientRect();
+    const scale = Math.min(rect.width / vw, rect.height / vh);
+    const left = rect.left + (rect.width - vw * scale) / 2;
+    const top = rect.top + (rect.height - vh * scale) / 2;
+    const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("class", "trophy-frags");
-    svg.style.left = `${imgRect.left}px`;
-    svg.style.top = `${imgRect.top}px`;
-    // 원래의 통짜 클립 그룹은 없애고, 파편마다 같은 실루엣 클립을 따로 건다(클립이 파편과 함께 움직이도록).
-    svg.querySelector("g[clip-path]")?.remove();
-    const remaining = [...shapes].sort(() => Math.random() - 0.5);
-    while (remaining.length > 0) {
-        const seed = remaining.pop();
-        const want = 2 + (Math.random() < 0.5 ? 0 : 1); // 2~3개
-        const group = [seed];
-        for (let k = 1; k < want && remaining.length > 0; k++) {
-            let best = 0;
-            let bestD = Infinity;
-            remaining.forEach((sh, i) => {
-                const d = (sh.cx - seed.cx) ** 2 + (sh.cy - seed.cy) ** 2;
-                if (d < bestD) {
-                    bestD = d;
-                    best = i;
-                }
-            });
-            group.push(remaining.splice(best, 1)[0]);
-        }
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        g.setAttribute("clip-path", `url(#${clipId})`);
-        group.forEach((sh) => g.appendChild(sh.el));
-        svg.appendChild(g);
-        const gcx = group.reduce((sum, sh) => sum + sh.cx, 0) / group.length;
-        const gcy = group.reduce((sum, sh) => sum + sh.cy, 0) / group.length;
-        const screenX = imgRect.left + (gcx - vb.x) * scale;
-        const screenY = imgRect.top + (gcy - vb.y) * scale;
-        pieces.push(makePiece(screenX, screenY, ox, oy, g, (p) => {
+    svg.setAttribute("viewBox", `${vx} ${vy} ${vw} ${vh}`);
+    svg.setAttribute("width", String(vw * scale));
+    svg.setAttribute("height", String(vh * scale));
+    svg.style.left = `${left}px`;
+    svg.style.top = `${top}px`;
+    const defs = document.createElementNS(SVG_NS, "defs");
+    svg.appendChild(defs);
+    const uid = `tf${rank}-${Math.random().toString(36).slice(2, 8)}`;
+    data.frags.forEach((frag, i) => {
+        const clip = document.createElementNS(SVG_NS, "clipPath");
+        clip.setAttribute("id", `${uid}-${i}`);
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute("d", frag.d);
+        clip.appendChild(path);
+        defs.appendChild(clip);
+        // 파편 = 완성된 트로피 그림을 이 파편 모양으로 자른 것. transform이 클립까지 함께 옮긴다.
+        const piece = document.createElementNS(SVG_NS, "image");
+        piece.setAttribute("href", art.src);
+        piece.setAttributeNS(XLINK_NS, "xlink:href", art.src); // 구형 Safari용
+        piece.setAttribute("x", String(vx));
+        piece.setAttribute("y", String(vy));
+        piece.setAttribute("width", String(vw));
+        piece.setAttribute("height", String(vh));
+        piece.setAttribute("preserveAspectRatio", "none");
+        piece.setAttribute("clip-path", `url(#${uid}-${i})`);
+        svg.appendChild(piece);
+        const [cx, cy] = frag.c;
+        pieces.push(makePiece(left + (cx - vx) * scale, top + (cy - vy) * scale, ox, oy, piece, (p) => {
             const deg = (p.angle * 180) / Math.PI;
-            g.setAttribute("transform", `translate(${p.x / scale} ${p.y / scale}) rotate(${deg} ${gcx} ${gcy})`);
+            piece.setAttribute("transform", `translate(${p.x / scale} ${p.y / scale}) rotate(${deg} ${cx} ${cy})`);
         }));
-    }
+    });
     layer.appendChild(svg);
     card.classList.add("trophy-shattering");
     return true;
@@ -357,26 +343,37 @@ function spawnShatter(card) {
         const ox = cardRect.left + cardRect.width / 2;
         const oy = cardRect.top + cardRect.height / 2;
         const pieces = [];
-        // 트로피 카드는 정보 박스(podium-top)만 크랙 파편으로, 트로피(단)는 도형 묶음 파편으로 부순다.
-        let shardRect = cardRect;
-        if (card.classList.contains("trophy") && spawnTrophyFragments(card, Number(card.dataset.rank), layer, pieces, ox, oy)) {
-            const top = card.querySelector(".podium-top");
-            if (top)
-                shardRect = top.getBoundingClientRect();
-        }
+        // 트로피(단)는 트로피를 그린 도형 기반 파편으로, 정보 박스(podium-top)는 박스 그대로의 금 간 조각으로 부순다.
+        // (트로피 파편을 못 만들면 트로피까지 포함한 카드 전체를 금 간 조각으로 부순다.)
+        const trophyDone = card.classList.contains("trophy") && spawnTrophyFragments(card, Number(card.dataset.rank), layer, pieces, ox, oy);
+        const top = card.querySelector(".podium-top");
+        const shardRect = trophyDone && top ? top.getBoundingClientRect() : cardRect;
+        // 조각마다 실제 카드의 복제본을 넣고 조각 모양으로 잘라, 단색 도형이 아니라 박스 자체가 깨지게 한다.
+        const ghost = card.cloneNode(true);
+        ghost.classList.remove("drop", "shatter", "trophy-shattering");
+        ghost.removeAttribute("data-id");
+        ghost.classList.add("shard-ghost");
+        ghost.style.width = `${cardRect.width}px`;
+        ghost.style.height = `${cardRect.height}px`;
+        if (trophyDone)
+            ghost.querySelector(".podium-step")?.style.setProperty("visibility", "hidden");
+        const offX = shardRect.left - cardRect.left;
+        const offY = shardRect.top - cardRect.top;
         SHARD_CLIP_PATHS.forEach((clipPath) => {
             const [px, py] = polygonCentroid(clipPath);
-            const shard = document.createElement("div");
-            shard.className = "shard";
-            shard.style.left = `${shardRect.left}px`;
-            shard.style.top = `${shardRect.top}px`;
-            shard.style.width = `${shardRect.width}px`;
-            shard.style.height = `${shardRect.height}px`;
-            shard.style.clipPath = clipPath;
-            shard.style.transformOrigin = `${px}% ${py}%`;
-            layer.appendChild(shard);
+            const pts = [...clipPath.matchAll(/(-?[\d.]+)%\s+(-?[\d.]+)%/g)].map((m) => `${offX + (shardRect.width * Number(m[1])) / 100}px ${offY + (shardRect.height * Number(m[2])) / 100}px`);
             const cx = shardRect.left + (shardRect.width * px) / 100;
             const cy = shardRect.top + (shardRect.height * py) / 100;
+            const shard = document.createElement("div");
+            shard.className = "shard";
+            shard.style.left = `${cardRect.left}px`;
+            shard.style.top = `${cardRect.top}px`;
+            shard.style.width = `${cardRect.width}px`;
+            shard.style.height = `${cardRect.height}px`;
+            shard.style.clipPath = `polygon(${pts.join(", ")})`;
+            shard.style.transformOrigin = `${cx - cardRect.left}px ${cy - cardRect.top}px`;
+            shard.appendChild(ghost.cloneNode(true));
+            layer.appendChild(shard);
             pieces.push(makePiece(cx, cy, ox, oy, shard, (p) => {
                 shard.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${p.angle}rad)`;
             }, 1.8));
@@ -496,7 +493,8 @@ async function playPodiumReplace(changedRanks, top3, leaderTime, leadMs = ROW_FL
         if (cardsToShatter.length > 0) {
             if (leadMs > 0)
                 await delay(leadMs);
-            await Promise.all(cardsToShatter.map((c) => spawnShatter(c)));
+            // 여러 장이 한꺼번에 부서질 때는 80ms씩 어긋나게 시작해, 파편 생성 부담을 한 프레임에 몰지 않는다.
+            await Promise.all(cardsToShatter.map((c, i) => delay(i * 80).then(() => spawnShatter(c))));
         }
         cardsToShatter.forEach((c) => c.remove());
         // 바뀐 자리만 새 카드로 교체해 붙인다 (그대로인 자리는 기존 DOM을 그대로 유지).

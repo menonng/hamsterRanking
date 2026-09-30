@@ -623,9 +623,18 @@ section.card {
 }
 .blast-layer .shard {
   position: fixed;
-  background: var(--accent);
-  opacity: 0.95;
   will-change: transform;
+}
+/* 조각 안에 들어가는 실제 카드 복제본: 원래 자리 그대로 겹쳐 보이도록 고정 크기·애니메이션 없음. */
+.blast-layer .shard-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  max-width: none;
+  box-sizing: border-box;
+  animation: none !important;
+  transform: none !important;
 }
 /* 트로피 파편(인라인 SVG). 그림자 필터는 매 프레임 비용이 커서 파편에는 쓰지 않는다. */
 .trophy-frags {

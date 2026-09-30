@@ -61,6 +61,19 @@ python3 -m http.server 8000
 
 1~3위 카드의 메달 이모지를 [fogleman/primitive](https://github.com/fogleman/primitive)(MIT, © 2016 Michael Fogleman)로 만든
 도형 조합 트로피(`assets/trophy/*.svg`)로 바꿨다. primitive는 저장소에 포함하거나 포크하지 않고, 별도로 실행해 생성한 결과 이미지만 사용한다.
+**부서지는 연출**: 트로피 파편은 트로피를 그린 primitive 도형을 기반으로 만든다. 각 도형이 최종 그림에서 실제로 보이는 영역
+(트로피 윤곽 ∩ 그 도형 − 나중에 덮어 그린 도형들)을 계산해, 서로 맞닿은 2~3개씩 묶은 것이 파편 하나다. 파편에는 완성된 트로피 그림을
+그 모양대로 잘라 입히므로, 모든 파편을 합치면 정확히 원래 트로피가 된다. 이름·기록 박스는 박스 자체(실제 카드 복제본)가 금 간 조각으로 깨진다.
+트로피 그림을 바꿨다면 파편 데이터도 다시 만든다:
+
+```bash
+pip install shapely
+python3 scripts/trophy_fragments.py        # → assets/trophy/fragments.json
+python3 -m http.server 8123 &              # 다른 터미널에서
+node scripts/rasterize_trophy.cjs          # → assets/trophy/*-frag.png (playwright 필요)
+```
+그 뒤 `src/ranking.ts`의 `TROPHY_FRAG_VERSION`을 올려 캐시를 무효화한다.
+
 이전 모습으로 되돌리려면 `src/ranking.ts`의 `TROPHY_PODIUM`을 `false`로 바꾸고 다시 빌드하거나, 이 기능 커밋 하나를 `git revert` 하면 된다.
 
 **연출 확인용 단축키**: 주소 끝에 `?preview`를 붙여 연 경우에만, `q` / `w` / `e`로 1 / 2 / 3위 카드의 교체 연출을 재생한다
@@ -70,7 +83,7 @@ python3 -m http.server 8000
 
 내장 GPU 구형 노트북이나 몇 년 전 폰에서도 끊기지 않도록, 코어 4개 이하·메모리 4GB 이하·데이터 절약 모드인 기기이거나
 파괴 연출이 실제로 25fps 아래로 떨어졌던 기기는 자동으로 저사양 모드(`html.lite`)로 돈다.
-저사양 모드에서는 트로피 파편 수를 절반 가까이로 줄이고(작은 도형 제외, 2~3개 묶음 규칙은 유지), 계속 도는 점멸 효과·착지 번쩍임·트로피 그림자를 끈다.
+저사양 모드에서는 계속 도는 점멸 효과·착지 번쩍임·트로피 그림자를 끈다(트로피 파편은 원래 도형 그대로 유지).
 확인용으로 `?lite`(강제 저사양), `?full`(강제 일반)을 주소에 붙일 수 있다.
 
 모든 기기 공통으로: 상단바 배경 흐림 효과 제거, 타이틀을 사각형 1,220개 → 경로 1개로 합침, 트로피 SVG는 미리 한 번만 해석,
