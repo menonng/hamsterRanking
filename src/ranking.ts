@@ -37,7 +37,6 @@ const TROPHY_FILES = ["gold.svg", "silver.svg", "bronze.svg"];
 
 const REST_GROUP_SIZE = 10; // 11위 이하는 10명씩 박스를 나눈다
 const ROW_FLIP_MS = 500;
-const SHATTER_MS = 560;
 const PODIUM_DROP_MS = 600 + 160; // 애니메이션 길이 + 3위 stagger 지연
 const IMPACT_MS = 320;
 const STEP_INTERVAL_MS = 5000; // 여러 건이 한번에 들어왔을 때 각 항목 연출 "시작" 사이의 간격
@@ -52,15 +51,6 @@ const SHARD_CLIP_PATHS = [
   "polygon(55% 35%, 100% 30%, 100% 70%, 60% 65%)",
   "polygon(55% 60%, 60% 65%, 70% 100%, 20% 100%)",
   "polygon(60% 65%, 100% 70%, 100% 100%, 70% 100%)",
-];
-const SHARD_DIRECTIONS: Array<[number, number]> = [
-  [-1, -0.5],
-  [0.2, -1],
-  [-1, 0.4],
-  [-0.3, -0.6],
-  [1, -0.2],
-  [-0.2, 1],
-  [1, 0.8],
 ];
 
 let previousIds = new Set<string>();
@@ -147,8 +137,12 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** 카드를 크랙 조각들로 쪼개 사방으로 날아가며 사라지게 한다 (진짜 깨지는 것처럼 보이도록). */
-// ---- 트로피 단 파편화 ----
+// ---- 파괴 연출: 중심에서 에너지가 발산해 파편이 튀어나가고, 중력으로 창 아래로 떨어진다 ----
+const GRAVITY = 2600; // px/s²
+const BLAST_DRAG = 0.8; // 1/s — 공기 저항(튀어나가는 속도를 서서히 줄인다)
+const BLAST_RESOLVE_MS = 650; // 이 시간 뒤 새 카드가 떨어지기 시작(파편은 계속 떨어진다)
+const BLAST_MAX_MS = 6000;
+
 const trophySvgCache = new Map<string, string>();
 
 /** 트로피 SVG 원본을 미리 받아둔다(부술 때 도형 하나하나를 파편으로 쓰려고 인라인으로 다시 그린다). */
@@ -162,18 +156,96 @@ function prefetchTrophies(): void {
   }
 }
 
+interface Piece {
+  x: number; // 시작 위치 대비 변위(px)
+  y: number;
+  vx: number;
+  vy: number;
+  angle: number; // rad
+  spin: number; // rad/s
+  baseX: number; // 시작 시 화면상 중심 좌표(창 밖 판정용)
+  baseY: number;
+  done: boolean;
+  apply: (p: Piece) => void;
+}
+
+/** 폭발 중심에서 파편까지의 방향으로 튀어나가는 초기 속도. 중심에 가까운 파편일수록 더 세게 맞는다. */
+function blastVelocity(px: number, py: number, ox: number, oy: number): [number, number] {
+  const dx = px - ox;
+  const dy = py - oy;
+  const dist = Math.hypot(dx, dy) || 1;
+  const theta = Math.atan2(dy, dx) + (Math.random() * 2 - 1) * 0.35;
+  const speed = (650 + 1500 * Math.exp(-dist / 180)) * (0.7 + Math.random() * 0.6);
+  return [Math.cos(theta) * speed, Math.sin(theta) * speed - 250];
+}
+
+/** `heft`가 클수록 무거운(큰) 파편이라 덜 멀리, 덜 빨리 돈다. */
+function makePiece(
+  cx: number,
+  cy: number,
+  ox: number,
+  oy: number,
+  apply: (p: Piece) => void,
+  heft = 1,
+): Piece {
+  const [vx, vy] = blastVelocity(cx, cy, ox, oy);
+  return { x: 0, y: 0, vx: vx / heft, vy: vy / heft, angle: 0, spin: ((Math.random() * 2 - 1) * 9) / heft, baseX: cx, baseY: cy, done: false, apply };
+}
+
+function runBlast(pieces: Piece[], layer: HTMLElement): void {
+  const start = performance.now();
+  let last = start;
+  const tick = (now: number): void => {
+    const dt = Math.min((now - last) / 1000, 0.033);
+    last = now;
+    const k = Math.exp(-BLAST_DRAG * dt);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    let alive = 0;
+    for (const p of pieces) {
+      if (p.done) continue;
+      p.vy += GRAVITY * dt;
+      p.vx *= k;
+      p.vy *= k;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.angle += p.spin * dt;
+      p.apply(p);
+      const sx = p.baseX + p.x;
+      const sy = p.baseY + p.y;
+      if ((sy > h + 160 && p.vy > 0) || sx < -400 || sx > w + 400) p.done = true;
+      else alive++;
+    }
+    if (alive > 0 && now - start < BLAST_MAX_MS) requestAnimationFrame(tick);
+    else layer.remove();
+  };
+  requestAnimationFrame(tick);
+}
+
+function polygonCentroid(clipPath: string): [number, number] {
+  const pts = [...clipPath.matchAll(/(-?[\d.]+)%\s+(-?[\d.]+)%/g)].map((m) => [Number(m[1]), Number(m[2])] as const);
+  const n = pts.length || 1;
+  return [pts.reduce((s, p) => s + p[0], 0) / n, pts.reduce((s, p) => s + p[1], 0) / n];
+}
+
 interface TriShape {
   el: SVGPolygonElement;
   cx: number;
   cy: number;
 }
 
-/** primitive가 만든 삼각형들 중 서로 가까운 2~3개씩 묶어 파편(그룹)으로 만들고 사방으로 날린다. */
-function spawnTrophyFragments(card: HTMLElement, rank: number): boolean {
-  const step = card.querySelector<HTMLElement>(".podium-step");
+/** primitive가 만든 삼각형들 중 서로 가까운 2~3개씩 묶어 파편(그룹)으로 만들어 폭발 입자로 등록한다. */
+function spawnTrophyFragments(
+  card: HTMLElement,
+  rank: number,
+  layer: HTMLElement,
+  pieces: Piece[],
+  ox: number,
+  oy: number,
+): boolean {
   const img = card.querySelector<HTMLImageElement>(".trophy-step");
   const svgText = trophySvgCache.get(TROPHY_FILES[rank - 1] ?? "");
-  if (!step || !img || !svgText) return false;
+  if (!img || !svgText) return false;
 
   const clipId = `tclip-${rank}-${Math.random().toString(36).slice(2, 8)}`;
   const doc = new DOMParser().parseFromString(
@@ -192,25 +264,26 @@ function spawnTrophyFragments(card: HTMLElement, rank: number): boolean {
   });
 
   const imgRect = img.getBoundingClientRect();
-  const stepRect = step.getBoundingClientRect();
+  const vb = svg.viewBox.baseVal;
+  const scale = imgRect.width / vb.width;
   svg.setAttribute("width", String(imgRect.width));
   svg.setAttribute("height", String(imgRect.height));
   svg.setAttribute("class", "trophy-frags");
-  svg.style.left = `${imgRect.left - stepRect.left}px`;
-  svg.style.top = `${imgRect.top - stepRect.top}px`;
+  svg.style.left = `${imgRect.left}px`;
+  svg.style.top = `${imgRect.top}px`;
 
   // 원래의 통짜 클립 그룹은 없애고, 파편마다 같은 실루엣 클립을 따로 건다(클립이 파편과 함께 움직이도록).
   svg.querySelector("g[clip-path]")?.remove();
   const remaining = [...shapes].sort(() => Math.random() - 0.5);
   while (remaining.length > 0) {
     const seed = remaining.pop() as TriShape;
-    const want = 1 + (Math.random() < 0.5 ? 1 : 2); // 총 2~3개
+    const want = 2 + (Math.random() < 0.5 ? 0 : 1); // 2~3개
     const group: TriShape[] = [seed];
     for (let k = 1; k < want && remaining.length > 0; k++) {
       let best = 0;
       let bestD = Infinity;
-      remaining.forEach((s, i) => {
-        const d = (s.cx - seed.cx) ** 2 + (s.cy - seed.cy) ** 2;
+      remaining.forEach((sh, i) => {
+        const d = (sh.cx - seed.cx) ** 2 + (sh.cy - seed.cy) ** 2;
         if (d < bestD) {
           bestD = d;
           best = i;
@@ -220,51 +293,70 @@ function spawnTrophyFragments(card: HTMLElement, rank: number): boolean {
     }
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("clip-path", `url(#${clipId})`);
-    g.setAttribute("class", "frag");
-    group.forEach((s) => g.appendChild(s.el));
-    const gx = group.reduce((s, p) => s + p.cx, 0) / group.length - 128;
-    const gy = group.reduce((s, p) => s + p.cy, 0) / group.length - 120;
-    const len = Math.hypot(gx, gy) || 1;
-    const push = 50 + Math.random() * 90;
-    g.style.setProperty("--dx", `${(gx / len) * push + (Math.random() * 2 - 1) * 30}px`);
-    g.style.setProperty("--dy", `${(gy / len) * push + 60 + Math.random() * 90}px`);
-    g.style.setProperty("--rot", `${(Math.random() * 2 - 1) * 110}deg`);
-    g.style.animationDelay = `${Math.random() * 60}ms`;
+    group.forEach((sh) => g.appendChild(sh.el));
     svg.appendChild(g);
+
+    const gcx = group.reduce((sum, sh) => sum + sh.cx, 0) / group.length;
+    const gcy = group.reduce((sum, sh) => sum + sh.cy, 0) / group.length;
+    const screenX = imgRect.left + (gcx - vb.x) * scale;
+    const screenY = imgRect.top + (gcy - vb.y) * scale;
+    pieces.push(
+      makePiece(screenX, screenY, ox, oy, (p) => {
+        const deg = (p.angle * 180) / Math.PI;
+        g.setAttribute("transform", `translate(${p.x / scale} ${p.y / scale}) rotate(${deg} ${gcx} ${gcy})`);
+      }),
+    );
   }
 
-  step.appendChild(svg);
+  layer.appendChild(svg);
   card.classList.add("trophy-shattering");
   return true;
 }
 
+/** 카드의 정중앙에서 에너지가 사방으로 발산하듯 파편이 튀어나간 뒤, 중력으로 창 아래까지 떨어진다. */
 function spawnShatter(card: HTMLElement): Promise<void> {
   return new Promise((resolve) => {
-    // 트로피 카드는 정보 박스(podium-top)만 기존 크랙 파편으로, 트로피(단)는 도형 묶음 파편으로 부순다.
-    let shardHost: HTMLElement = card;
+    const layer = document.createElement("div");
+    layer.className = "blast-layer";
+    layer.style.setProperty("--accent", getComputedStyle(card).getPropertyValue("--accent"));
+    document.body.appendChild(layer);
+
+    const cardRect = card.getBoundingClientRect();
+    const ox = cardRect.left + cardRect.width / 2;
+    const oy = cardRect.top + cardRect.height / 2;
+    const pieces: Piece[] = [];
+
+    // 트로피 카드는 정보 박스(podium-top)만 크랙 파편으로, 트로피(단)는 도형 묶음 파편으로 부순다.
+    let shardRect = cardRect;
     if (card.classList.contains("trophy")) {
+      const fragsOk = spawnTrophyFragments(card, Number(card.dataset.rank), layer, pieces, ox, oy);
       const top = card.querySelector<HTMLElement>(".podium-top");
-      const layer = document.createElement("div");
-      layer.className = "shard-layer";
-      layer.style.height = `${top?.offsetHeight ?? 0}px`;
-      card.appendChild(layer);
-      shardHost = layer;
-      spawnTrophyFragments(card, Number(card.dataset.rank));
+      if (fragsOk && top) shardRect = top.getBoundingClientRect();
     }
-    SHARD_CLIP_PATHS.forEach((clipPath, i) => {
+
+    SHARD_CLIP_PATHS.forEach((clipPath) => {
+      const [px, py] = polygonCentroid(clipPath);
       const shard = document.createElement("div");
       shard.className = "shard";
+      shard.style.left = `${shardRect.left}px`;
+      shard.style.top = `${shardRect.top}px`;
+      shard.style.width = `${shardRect.width}px`;
+      shard.style.height = `${shardRect.height}px`;
       shard.style.clipPath = clipPath;
-      const [dx, dy] = SHARD_DIRECTIONS[i % SHARD_DIRECTIONS.length] ?? [0, 1];
-      const spread = 50 + Math.random() * 60;
-      shard.style.setProperty("--dx", `${dx * spread}px`);
-      shard.style.setProperty("--dy", `${dy * spread + 40 + Math.random() * 30}px`);
-      shard.style.setProperty("--rot", `${(Math.random() * 2 - 1) * 70}deg`);
-      shard.style.animationDelay = `${Math.random() * 50}ms`;
-      shardHost.appendChild(shard);
+      shard.style.transformOrigin = `${px}% ${py}%`;
+      layer.appendChild(shard);
+      const cx = shardRect.left + (shardRect.width * px) / 100;
+      const cy = shardRect.top + (shardRect.height * py) / 100;
+      pieces.push(
+        makePiece(cx, cy, ox, oy, (p) => {
+          shard.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${p.angle}rad)`;
+        }, 1.8),
+      );
     });
+
     card.classList.add("shatter");
-    setTimeout(resolve, SHATTER_MS);
+    runBlast(pieces, layer);
+    setTimeout(resolve, BLAST_RESOLVE_MS);
   });
 }
 

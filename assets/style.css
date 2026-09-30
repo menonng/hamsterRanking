@@ -590,51 +590,33 @@ section.card {
 /* 1~3위 변동 시: 기존 시상대가 산산조각나며 사라지고(shatter), 새 시상대가 위에서
    떨어져 내려와(drop) 충격과 함께 착지한다(impact). */
 
-.shard {
-  position: absolute;
+/* 파편은 카드 밖(화면 전체)을 날아다니므로 고정 위치 오버레이에 두고 JS 물리로 움직인다. */
+.blast-layer {
+  position: fixed;
   inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  overflow: hidden;
+}
+.blast-layer .shard {
+  position: fixed;
   background: var(--accent);
   opacity: 0.95;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-@keyframes shardFly {
-  to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.75); opacity: 0; }
-}
-.podium-card.shatter .shard {
-  animation: shardFly 0.5s cubic-bezier(.5, 0, .75, .4) forwards;
-}
-.podium-card.shatter .podium-top,
-.podium-card.shatter .podium-step {
-  transition: opacity 0.12s ease;
-  opacity: 0;
-}
-/* 트로피 카드: 단은 그대로 두고(그 위에 도형 파편이 떠 있다) 원본 그림/번호만 즉시 숨긴다. */
-.podium-card.trophy.shatter .podium-step { opacity: 1; transition: none; }
-.podium-card.trophy-shattering .trophy-step,
-.podium-card.trophy-shattering .podium-num { visibility: hidden; }
-.shard-layer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  pointer-events: none;
+  will-change: transform;
 }
 .trophy-frags {
-  position: absolute;
+  position: fixed;
   overflow: visible;
-  pointer-events: none;
   filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.22));
 }
-.trophy-frags .frag {
-  transform-box: fill-box;
-  transform-origin: center;
-  will-change: transform, opacity;
-  animation: fragFly 0.55s cubic-bezier(.4, 0, .7, .5) forwards;
+/* 원래 카드(정보 박스·단)는 파편이 생기는 즉시 숨긴다. */
+.podium-card.shatter .podium-top,
+.podium-card.shatter .podium-step {
+  transition: none;
+  opacity: 0;
 }
-@keyframes fragFly {
-  to { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
-}
+.podium-card.trophy-shattering .trophy-step,
+.podium-card.trophy-shattering .podium-num { visibility: hidden; }
 .podium-card.shatter {
   overflow: visible;
   border-color: transparent;
@@ -879,7 +861,7 @@ details.settings summary {
     opacity: 1;
     transform: none;
   }
-  .shard, .trophy-frags { display: none; }
+  .blast-layer { display: none; }
   .podium-card.shatter .podium-top,
   .podium-card.shatter .podium-step {
     transition: opacity 150ms ease;
