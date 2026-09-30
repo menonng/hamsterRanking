@@ -148,8 +148,109 @@ function delay(ms: number): Promise<void> {
 }
 
 /** 카드를 크랙 조각들로 쪼개 사방으로 날아가며 사라지게 한다 (진짜 깨지는 것처럼 보이도록). */
+// ---- 트로피 단 파편화 ----
+const trophySvgCache = new Map<string, string>();
+
+/** 트로피 SVG 원본을 미리 받아둔다(부술 때 도형 하나하나를 파편으로 쓰려고 인라인으로 다시 그린다). */
+function prefetchTrophies(): void {
+  if (!TROPHY_PODIUM) return;
+  for (const file of TROPHY_FILES) {
+    fetch(`./assets/trophy/${file}`)
+      .then((res) => (res.ok ? res.text() : Promise.reject(new Error(String(res.status)))))
+      .then((text) => trophySvgCache.set(file, text))
+      .catch(() => undefined);
+  }
+}
+
+interface TriShape {
+  el: SVGPolygonElement;
+  cx: number;
+  cy: number;
+}
+
+/** primitive가 만든 삼각형들 중 서로 가까운 2~3개씩 묶어 파편(그룹)으로 만들고 사방으로 날린다. */
+function spawnTrophyFragments(card: HTMLElement, rank: number): boolean {
+  const step = card.querySelector<HTMLElement>(".podium-step");
+  const img = card.querySelector<HTMLImageElement>(".trophy-step");
+  const svgText = trophySvgCache.get(TROPHY_FILES[rank - 1] ?? "");
+  if (!step || !img || !svgText) return false;
+
+  const clipId = `tclip-${rank}-${Math.random().toString(36).slice(2, 8)}`;
+  const doc = new DOMParser().parseFromString(
+    svgText.replace(/id="t"/, `id="${clipId}"`).replace(/url\(#t\)/g, `url(#${clipId})`),
+    "image/svg+xml",
+  );
+  const svg = document.importNode(doc.documentElement, true) as unknown as SVGSVGElement;
+  const polys = Array.from(svg.querySelectorAll<SVGPolygonElement>("g[clip-path] > polygon"));
+  if (polys.length === 0) return false;
+
+  const shapes: TriShape[] = polys.map((el) => {
+    const pts = (el.getAttribute("points") ?? "").trim().split(/\s+/).map((p) => p.split(",").map(Number));
+    const cx = pts.reduce((s, p) => s + (p[0] ?? 0), 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + (p[1] ?? 0), 0) / pts.length;
+    return { el, cx, cy };
+  });
+
+  const imgRect = img.getBoundingClientRect();
+  const stepRect = step.getBoundingClientRect();
+  svg.setAttribute("width", String(imgRect.width));
+  svg.setAttribute("height", String(imgRect.height));
+  svg.setAttribute("class", "trophy-frags");
+  svg.style.left = `${imgRect.left - stepRect.left}px`;
+  svg.style.top = `${imgRect.top - stepRect.top}px`;
+
+  // 원래의 통짜 클립 그룹은 없애고, 파편마다 같은 실루엣 클립을 따로 건다(클립이 파편과 함께 움직이도록).
+  svg.querySelector("g[clip-path]")?.remove();
+  const remaining = [...shapes].sort(() => Math.random() - 0.5);
+  while (remaining.length > 0) {
+    const seed = remaining.pop() as TriShape;
+    const want = 1 + (Math.random() < 0.5 ? 1 : 2); // 총 2~3개
+    const group: TriShape[] = [seed];
+    for (let k = 1; k < want && remaining.length > 0; k++) {
+      let best = 0;
+      let bestD = Infinity;
+      remaining.forEach((s, i) => {
+        const d = (s.cx - seed.cx) ** 2 + (s.cy - seed.cy) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      });
+      group.push(remaining.splice(best, 1)[0] as TriShape);
+    }
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("clip-path", `url(#${clipId})`);
+    g.setAttribute("class", "frag");
+    group.forEach((s) => g.appendChild(s.el));
+    const gx = group.reduce((s, p) => s + p.cx, 0) / group.length - 128;
+    const gy = group.reduce((s, p) => s + p.cy, 0) / group.length - 120;
+    const len = Math.hypot(gx, gy) || 1;
+    const push = 50 + Math.random() * 90;
+    g.style.setProperty("--dx", `${(gx / len) * push + (Math.random() * 2 - 1) * 30}px`);
+    g.style.setProperty("--dy", `${(gy / len) * push + 60 + Math.random() * 90}px`);
+    g.style.setProperty("--rot", `${(Math.random() * 2 - 1) * 110}deg`);
+    g.style.animationDelay = `${Math.random() * 60}ms`;
+    svg.appendChild(g);
+  }
+
+  step.appendChild(svg);
+  card.classList.add("trophy-shattering");
+  return true;
+}
+
 function spawnShatter(card: HTMLElement): Promise<void> {
   return new Promise((resolve) => {
+    // 트로피 카드는 정보 박스(podium-top)만 기존 크랙 파편으로, 트로피(단)는 도형 묶음 파편으로 부순다.
+    let shardHost: HTMLElement = card;
+    if (card.classList.contains("trophy")) {
+      const top = card.querySelector<HTMLElement>(".podium-top");
+      const layer = document.createElement("div");
+      layer.className = "shard-layer";
+      layer.style.height = `${top?.offsetHeight ?? 0}px`;
+      card.appendChild(layer);
+      shardHost = layer;
+      spawnTrophyFragments(card, Number(card.dataset.rank));
+    }
     SHARD_CLIP_PATHS.forEach((clipPath, i) => {
       const shard = document.createElement("div");
       shard.className = "shard";
@@ -160,7 +261,7 @@ function spawnShatter(card: HTMLElement): Promise<void> {
       shard.style.setProperty("--dy", `${dy * spread + 40 + Math.random() * 30}px`);
       shard.style.setProperty("--rot", `${(Math.random() * 2 - 1) * 70}deg`);
       shard.style.animationDelay = `${Math.random() * 50}ms`;
-      card.appendChild(shard);
+      shardHost.appendChild(shard);
     });
     card.classList.add("shatter");
     setTimeout(resolve, SHATTER_MS);
@@ -542,6 +643,7 @@ function initTheme(): void {
 }
 
 initTheme();
+prefetchTrophies();
 initOutro();
 initLanding();
 void render(getCombined());
