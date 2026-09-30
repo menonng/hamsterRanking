@@ -54,3 +54,9 @@ npm run watch     # 변경 감지 자동 빌드
 ```bash
 python3 -m http.server 8000
 ```
+
+## 트로피 단상 (프로토타입)
+
+1~3위 카드의 메달 이모지를 [fogleman/primitive](https://github.com/fogleman/primitive)(MIT, © 2016 Michael Fogleman)로 만든
+도형 조합 트로피(`assets/trophy/*.svg`)로 바꿨다. primitive는 저장소에 포함하거나 포크하지 않고, 별도로 실행해 생성한 결과 이미지만 사용한다.
+이전 모습으로 되돌리려면 `src/ranking.ts`의 `TROPHY_PODIUM`을 `false`로 바꾸고 다시 빌드하거나, 이 기능 커밋 하나를 `git revert` 하면 된다.

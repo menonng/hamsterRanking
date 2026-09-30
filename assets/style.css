@@ -343,6 +343,13 @@ section.card {
   line-height: 1;
   margin-bottom: 4px;
 }
+.medal .trophy {
+  display: block;
+  margin: 0 auto;
+  height: calc(clamp(52px, 15vw, 104px) * var(--tier));
+  width: auto;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.22));
+}
 .podium-name {
   font-weight: 800;
   font-size: calc(clamp(13px, 3.6vw, 19px) * var(--tier));
