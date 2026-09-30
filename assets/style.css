@@ -458,6 +458,14 @@ section.card {
   color: #fff;
 }
 
+#restGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+}
+#restGroups:empty { display: none; }
+
 /* ---------- 맨 아래 깜짝 푸터 ---------- */
 
 .outro {

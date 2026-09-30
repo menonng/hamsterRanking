@@ -20,6 +20,7 @@ const PALETTE = [
 ];
 const MEDAL_COLORS = ["var(--medal-gold)", "var(--medal-silver)", "var(--medal-bronze)"];
 const MEDALS = ["🥇", "🥈", "🥉"];
+const REST_GROUP_SIZE = 10; // 11위 이하는 10명씩 박스를 나눈다
 const ROW_FLIP_MS = 500;
 const SHATTER_MS = 560;
 const PODIUM_DROP_MS = 600 + 160; // 애니메이션 길이 + 3위 stagger 지연
@@ -53,8 +54,7 @@ let remoteRecords = [];
 const els = {
     podium: document.getElementById("podium"),
     midList: document.getElementById("midList"),
-    restList: document.getElementById("restList"),
-    restSection: document.getElementById("restSection"),
+    restGroups: document.getElementById("restGroups"),
     emptyState: document.getElementById("emptyState"),
     totalCount: document.getElementById("totalCount"),
     lastSync: document.getElementById("lastSync"),
@@ -108,6 +108,12 @@ function escapeHtml(s) {
         '"': "&quot;",
         "'": "&#39;",
     })[c]);
+}
+function chunk(items, size) {
+    const out = [];
+    for (let i = 0; i < items.length; i += size)
+        out.push(items.slice(i, i + size));
+    return out;
 }
 function delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -175,7 +181,7 @@ function playFlip(container, previousRects) {
     });
 }
 function renderRowLists(sorted) {
-    const rowContainers = [els.midList, els.restList];
+    const rowContainers = [els.midList, els.restGroups];
     const previousRects = new Map();
     for (const c of rowContainers)
         captureRects(c).forEach((rect, id) => previousRects.set(id, rect));
@@ -183,8 +189,15 @@ function renderRowLists(sorted) {
     const mid = sorted.slice(3, 10);
     const rest = sorted.slice(10);
     els.midList.innerHTML = mid.map((r, i) => listRow(r, i + 4, !previousIds.has(r.id), true, leaderTime)).join("");
-    els.restSection.style.display = rest.length > 0 ? "block" : "none";
-    els.restList.innerHTML = rest.map((r, i) => listRow(r, i + 11, !previousIds.has(r.id), false, leaderTime)).join("");
+    els.restGroups.innerHTML = chunk(rest, REST_GROUP_SIZE)
+        .map((group, g) => {
+        const first = 11 + g * REST_GROUP_SIZE;
+        const last = first + group.length - 1;
+        const title = first === last ? `${first}위` : `${first}위 ~ ${last}위`;
+        const rows = group.map((r, i) => listRow(r, first + i, !previousIds.has(r.id), false, leaderTime)).join("");
+        return `<section class="card" aria-label="${title}"><h2><span class="h2-icon icon-rest">📋</span>${title}</h2><div>${rows}</div></section>`;
+    })
+        .join("");
     for (const c of rowContainers)
         playFlip(c, previousRects);
 }
