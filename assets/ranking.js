@@ -111,6 +111,16 @@ function placeAll(sorted) {
     });
     return out;
 }
+/**
+ * "1분 2.214초" → 소수부+"초"를 고정 폭 칸(왼쪽 정렬)에 넣어, 오른쪽 정렬된 목록에서 소수점 위치가 줄마다 맞게 한다.
+ * (소수부가 없거나 두 자리여도 같은 폭을 차지한다.) 기록 형식이 아니면 그대로 둔다.
+ */
+function alignedTime(text) {
+    const m = /^(.*?\d)(\.\d+)?초$/.exec(text);
+    if (!m)
+        return escapeHtml(text);
+    return `${escapeHtml(m[1] ?? "")}<span class="frac">${m[2] ?? ""}초</span>`;
+}
 function gapText(time, leaderTime) {
     return time - leaderTime <= 0 ? "선두와 동률" : formatGap(time - leaderTime);
 }
@@ -127,7 +137,7 @@ function podiumCard(p, rank, dropDelayClass, leaderTime) {
     return `
     <div class="${cls}" style="--accent:${color}" data-id="${r.id}" data-rank="${rank}">
       <div class="podium-top">
-        <div class="medal">${MEDALS[p.place - 1] ?? MEDALS[rank - 1]}</div>${tie}
+        ${TROPHY_PODIUM ? "" : `<div class="medal">${MEDALS[p.place - 1] ?? MEDALS[rank - 1]}</div>`}${tie}
         <div class="podium-name">${escapeHtml(r.name)}${aiBadge(r)}</div>
         ${metaLine(r) ? `<div class="podium-meta">${escapeHtml(metaLine(r))}</div>` : ""}
         <div class="podium-time">${formatTime(r.time)}</div>
@@ -150,8 +160,8 @@ function listRow(p, slot, isNew, colored, leaderTime) {
       <span class="row-name">${escapeHtml(r.name)}${aiBadge(r)}</span>
       <span class="row-meta${metaLine(r) ? "" : " empty"}">${escapeHtml(metaLine(r))}</span>
       <span class="row-time-wrap">
-        <span class="row-time">${formatTime(r.time)}</span>
-        <span class="row-gap">${gapText(r.time, leaderTime)}</span>
+        <span class="row-time">${alignedTime(formatTime(r.time))}</span>
+        <span class="row-gap">${alignedTime(gapText(r.time, leaderTime))}</span>
       </span>
     </div>`;
 }

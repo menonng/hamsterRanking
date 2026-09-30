@@ -19,6 +19,10 @@
   --color-warn: #FFCC11;
   --color-danger: #FF0045;
 
+  /* 타이틀(HAMSTER): 기존 산호색 면 + 같은 계열의 어두운 그림자 */
+  --title-face: #D64C29;
+  --title-shadow: #712614;
+
   --medal-gold: #DCA81C;
   --medal-silver: #B9BEC7;
   --medal-bronze: #B16C4C;
@@ -63,6 +67,8 @@
   --color-success: #55BB44;
   --color-warn: #FFCC11;
   --color-danger: #FF0045;
+  --title-face: #EE6A4A;
+  --title-shadow: #843825;
 
   --medal-gold: #EDB417;
   --medal-silver: #C1C8D2;
@@ -159,11 +165,9 @@ header.top h1 {
   display: block;
   width: clamp(220px, 80vw, 860px);
   height: auto;
-  color: var(--color-accent);
 }
-.brand-ascii path {
-  fill: currentColor;
-}
+.brand-ascii .t-face { fill: var(--title-face); }
+.brand-ascii .t-shadow { fill: var(--title-shadow); }
 
 .header-right {
   display: flex;
@@ -454,9 +458,14 @@ section.card {
   transform: translate(-50%, -50%);
   font-family: var(--font-mono);
   font-weight: 800;
-  font-size: calc(var(--th) * 0.2);
+  font-size: calc(var(--th) * 0.22);
   line-height: 1;
-  color: rgba(74, 44, 0, 0.85);
+  /* 밝은 별·금속 위 어디서든 읽히도록 흰 숫자 + 짙은 갈색 외곽선 */
+  color: #fff;
+  text-shadow:
+    1px 1px 0 rgba(58, 28, 4, 0.9), -1px -1px 0 rgba(58, 28, 4, 0.9),
+    1px -1px 0 rgba(58, 28, 4, 0.9), -1px 1px 0 rgba(58, 28, 4, 0.9),
+    0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
 /* ---------- 4~10위 / 11위 이하 리스트 ---------- */
@@ -496,6 +505,8 @@ section.card {
 .row-time-wrap { display: flex; flex-direction: column; align-items: flex-end; min-width: 64px; }
 /* 밝은 팔레트색(노랑 등)도 글자로 읽히도록 본문색 쪽으로 당긴 근색을 쓴다. */
 .row-time { font-family: var(--font-mono); font-weight: 700; letter-spacing: -0.01em; color: color-mix(in oklch, var(--accent) 70%, var(--ink)); text-align: right; }
+/* 소수부+초 칸 폭 고정(".123초") → 기록·차이의 소수점이 줄마다 같은 자리에 오고, "초"는 숫자에 붙는다. */
+.row-time .frac, .row-gap .frac { display: inline-block; min-width: calc(4ch + 1em); text-align: left; }
 .row-gap { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; color: var(--ink-dim); letter-spacing: -0.005em; }
 
 .ai-badge {
