@@ -1,145 +1,208 @@
 """픽셀 아트 트로피 생성기 (개발용, 결과물만 커밋한다).
 
-현재 트로피(primitive 도형 그림)를 Pyxelate(https://github.com/sedthh/pyxelate, MIT,
-© 2021 Richard Nagyfi)로 21×24 픽셀·소수 색 팔레트의 픽셀 아트로 줄인 뒤,
-픽셀 아트답게 다듬는다(외톨이 점 정리, 별 색 보정, 1픽셀 진한 외곽선).
+21×24칸 실루엣을 부위별로 직접 그리고(테두리·입구·컵·손잡이·기둥·매듭·받침대), 빛이 왼쪽 위에서 온다고 보고
+부위마다 픽셀 아트식 명암 규칙으로 금속 6단계 색을 칠한다.
+  - 컵·기둥·받침대: 원통 음영(왼쪽 반사띠 → 중간 → 오른쪽 그림자, 맨 오른쪽 가장자리는 반사광)
+  - 테두리: 앞쪽 립은 밝게, 입구 안쪽은 어둡게(빛을 받는 오른쪽 안벽만 조금 밝게)
+  - 손잡이: 관처럼 위·왼쪽 면은 밝게, 아래·오른쪽 면은 어둡게
+  - 겹치는 곳(테두리 아래, 컵 바닥 아래, 받침대 단 사이)은 접촉 그림자
+  - 외곽선: 빛 쪽(위·왼쪽)은 한 단계 밝은 진한 색, 그림자 쪽은 가장 진한 색(selective outline)
 
-    # 1) 원본 트로피를 416×480으로 렌더링한 PNG 준비: pix/src_{gold,silver,bronze}.png
-    # 2) PYTHONPATH=<pyxelate 소스 경로> python3 scripts/pixel_trophy.py <src 디렉터리>
-    #    → assets/trophy/pixel/{gold,silver,bronze}.svg       (화면 표시용, 칸마다 rect)
-    #    → assets/trophy/pixel/{gold,silver,bronze}-neon.svg  (다크 모드용: 외곽선 네온색)
-    #    → assets/trophy/pixel/pixels.json               (파괴 연출용 픽셀 격자)
-
-필요: pyxelate 소스, scikit-learn, scikit-image, numba
+    python3 scripts/pixel_trophy.py
+    → assets/trophy/pixel/{gold,silver,bronze}.svg       (화면 표시용)
+    → assets/trophy/pixel/{gold,silver,bronze}-neon.svg  (다크 모드용: 외곽선 네온색)
+    → assets/trophy/pixel/pixels.json                    (파괴 연출용 픽셀 격자)
 """
-import colorsys
 import json
-import sys
-from collections import Counter
 from pathlib import Path
-
-import numpy as np
-from pyxelate import Pyx
-from skimage import io
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "assets" / "trophy" / "pixel"
-NAMES = ["gold", "silver", "bronze"]
-GRID_W, GRID_H = 21, 24  # 416×480 → 21×24 칸(한 칸이 예전 32×36 칸의 가로세로 1.5배)
-# 트로피별 (대비 배율, 밝기 이동, 팔레트 색 수). 은은 원본이 밝은 회색 위주라 대비를 키워야 음영이 남는다.
-SETTINGS = {"gold": (1.0, 0, 7), "silver": (1.6, -20, 6), "bronze": (1.0, 0, 7)}
-# 다크 모드용 네온 외곽선 색(지정 팔레트: 노랑·하늘·주황)
-NEON = {"gold": "#FFCC11", "silver": "#39C5BB", "bronze": "#FF7E00"}
-STAR_TINT = {"gold": None, "silver": (255, 255, 255), "bronze": None}
+
+# 부위 지도(21×24). R 테두리, I 입구 안쪽, C 컵, H 손잡이, S 기둥, K 매듭, T 받침대 윗면, F 받침대 앞면
+SHAPE = [
+    "....RRRRRRRRRRRRR....",
+    "...RIIIIIIIIIIIIIR...",
+    "...RRRRRRRRRRRRRRR...",
+    "HHHCCCCCCCCCCCCCCCHHH",
+    "H..CCCCCCCCCCCCCCC..H",
+    "H..CCCCCCCCCCCCCCC..H",
+    "HH.CCCCCCCCCCCCCCC.HH",
+    ".HHHCCCCCCCCCCCCCHHH.",
+    "....CCCCCCCCCCCCC....",
+    ".....CCCCCCCCCCC.....",
+    "......CCCCCCCCC......",
+    ".......CCCCCCC.......",
+    "........CCCCC........",
+    ".........SSS.........",
+    ".........SSS.........",
+    "........KKKKK........",
+    ".........SSS.........",
+    ".........SSS.........",
+    "........SSSSS........",
+    ".......TTTTTTT.......",
+    ".......FFFFFFF.......",
+    ".....TTTTTTTTTTT.....",
+    ".....FFFFFFFFFFF.....",
+    ".....FFFFFFFFFFF.....",
+]
+
+# 금속별 6단계 색(0 가장 어두움 … 5 가장 밝은 반사)과 외곽선, 다크 모드 네온색
+METALS = {
+    "gold": {
+        "ramp": ["#5C3A00", "#9A6300", "#CC8C10", "#EDB52A", "#FFD95C", "#FFF6CF"],
+        "edge": "#3A2400",
+        "neon": "#FFCC11",
+    },
+    "silver": {
+        "ramp": ["#2E3440", "#5F6B7C", "#8E9AAB", "#BAC4D1", "#DDE4EC", "#FFFFFF"],
+        "edge": "#1C2028",
+        "neon": "#39C5BB",
+    },
+    "bronze": {
+        "ramp": ["#4A2410", "#7E4220", "#A8602F", "#CB8150", "#E9A97B", "#FFE1C8"],
+        "edge": "#2E1608",
+        "neon": "#FF7E00",
+    },
+}
+
+W, H = len(SHAPE[0]), len(SHAPE)
+assert all(len(r) == W for r in SHAPE), "모든 줄의 길이가 같아야 한다"
 
 
-def neighbors_majority(grid, y, x):
-    h, w = grid.shape
-    votes = Counter()
-    for dy in (-1, 0, 1):
-        for dx in (-1, 0, 1):
-            if (dy or dx) and 0 <= y + dy < h and 0 <= x + dx < w and grid[y + dy, x + dx] >= 0:
-                votes[grid[y + dy, x + dx]] += 1
-    return votes.most_common(1)[0][0] if votes else -1
+def at(x, y):
+    return SHAPE[y][x] if 0 <= x < W and 0 <= y < H else "."
 
 
-def clean(grid, colors, min_count=4):
-    """몇 칸 안 되는 색(가장자리 흰 테두리 등에서 생긴 얼룩)과 외톨이 칸을 주변 다수 색으로 바꾼다."""
-    for _ in range(3):
-        counts = Counter(grid[grid >= 0].tolist())
-        h, w = grid.shape
-        changed = False
-        for y in range(h):
-            for x in range(w):
-                c = grid[y, x]
-                if c < 0:
-                    continue
-                same = sum(
-                    1
-                    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1))
-                    if 0 <= y + dy < h and 0 <= x + dx < w and grid[y + dy, x + dx] == c
-                )
-                if counts[c] < min_count or same == 0:
-                    m = neighbors_majority(grid, y, x)
-                    if m >= 0 and m != c:
-                        grid[y, x] = m
-                        changed = True
-        if not changed:
-            break
-    return grid
+def run_extent(x, y):
+    """같은 줄에서 (x, y)가 속한 부위가 이어진 좌우 끝."""
+    part = at(x, y)
+    group = "RI" if part in "RI" else part
+    a = x
+    while at(a - 1, y) in group:
+        a -= 1
+    b = x
+    while at(b + 1, y) in group:
+        b += 1
+    return a, b
 
 
-def build(name, src_dir, star_mask):
-    src = io.imread(src_dir / f"src_{name}.png").astype(float)
-    contrast, shift, palette_size = SETTINGS[name]
-    rgb, alpha = src[..., :3], src[..., 3:]
-    mean = rgb[alpha[..., 0] > 127].mean(axis=0)
-    rgb = np.clip((rgb - mean) * contrast + mean + shift, 0, 255)
-    img = np.concatenate([rgb, alpha], axis=-1).astype(np.uint8)
-    out = Pyx(width=GRID_W, height=GRID_H, palette=palette_size, dither="none", alpha=0.6).fit_transform(img)
-    h, w = out.shape[:2]
-    opaque = out[..., 3] > 127
-    colors = sorted({tuple(int(v) for v in out[y, x, :3]) for y in range(h) for x in range(w) if opaque[y, x]})
-    index = {c: i for i, c in enumerate(colors)}
-    grid = np.full((h, w), -1, dtype=int)
-    for y in range(h):
-        for x in range(w):
-            if opaque[y, x]:
-                grid[y, x] = index[tuple(int(v) for v in out[y, x, :3])]
+def cylinder_tone(x, y):
+    """원통 음영: 왼쪽 반사띠가 가장 밝고 오른쪽으로 갈수록 어두워지며, 맨 오른쪽 끝은 반사광으로 조금 밝다."""
+    a, b = run_extent(x, y)
+    center = (a + b) / 2
+    half = (b - a) / 2 + 0.5
+    u = (x - center) / half
+    if u < -0.78:
+        return 2
+    if u < -0.5:
+        return 4
+    if u < -0.22:
+        return 5
+    if u < 0.18:
+        return 3
+    if u < 0.62:
+        return 2
+    if u < 0.86:
+        return 1
+    return 2
 
-    # 별: 채도 낮은 밝은 회색으로 뭉개진 별을 그 금속의 크림색으로 되돌린다. 세 트로피는 모양이 같으므로
-    # 금에서 찾은 별 위치(star_mask)를 은·동에도 똑같이 찍는다(은은 몸통과 별이 같은 흰색이라 저절로는 안 보인다).
-    lightest = max(colors, key=lambda c: sum(c) if colorsys.rgb_to_hsv(*(v / 255 for v in c))[1] > 0.25 else sum(c) / 10)
-    star = STAR_TINT[name] or tuple(round(v + (255 - v) * 0.55) for v in lightest)
-    star_cells = set()
-    if star_mask is None:
-        for y in range(h):
-            for x in range(w):
-                if grid[y, x] >= 0:
-                    _, s, v = colorsys.rgb_to_hsv(*(t / 255 for t in colors[grid[y, x]]))
-                    if s < 0.15 and v > 0.75:
-                        star_cells.add((y, x))
-    else:
-        star_cells = {(y, x) for y, x in star_mask if grid[y, x] >= 0}
-    colors.append(star)
-    si = len(colors) - 1
-    grid = clean(grid, colors)
-    for y, x in star_cells:
-        grid[y, x] = si
 
-    # 1픽셀 진한 외곽선(가장 어두운 색을 더 어둡게) — 사방에 1칸 여백을 두고 그린다.
-    used = sorted(set(grid[grid >= 0].tolist()) - {si})
-    darkest = min((colors[i] for i in used), key=sum)
-    outline = tuple(round(v * 0.5) for v in darkest)
-    colors.append(outline)
-    oi = len(colors) - 1
-    padded = np.full((h + 2, w + 2), -1, dtype=int)
-    padded[1:-1, 1:-1] = grid
-    ph, pw = padded.shape
-    edge = [
-        (y, x)
-        for y in range(ph)
-        for x in range(pw)
-        if padded[y, x] < 0
-        and any(0 <= y + dy < ph and 0 <= x + dx < pw and 0 <= padded[y + dy, x + dx] != oi
-                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)))
-    ]
-    for y, x in edge:
-        padded[y, x] = oi
+def tone(x, y):
+    part = at(x, y)
+    if part == "C":
+        t = cylinder_tone(x, y)
+        if y == 3 and t < 5:  # 테두리 바로 아래: 립이 드리운 그림자
+            t -= 1
+        if y >= 10:  # 컵 바닥으로 말려 들어가는 곳은 한 단계 어둡게
+            t -= 1
+        return t
+    if part == "R":
+        t = cylinder_tone(x, y)
+        return min(5, t + 1) if y == 2 else max(2, t)  # 앞쪽 립은 빛을 더 받는다
+    if part == "I":  # 입구 안쪽: 어둡고, 빛을 받는 오른쪽 안벽만 조금 밝다
+        a, b = run_extent(x, y)
+        u = (x - (a + b) / 2) / ((b - a) / 2 + 0.5)
+        return 0 if u < -0.2 else (1 if u < 0.35 else 2)
+    if part == "H":  # 관: 위·왼쪽 면은 밝게, 아래·오른쪽 면은 어둡게
+        up, left = at(x, y - 1) != "H", at(x - 1, y) != "H"
+        down, right = at(x, y + 1) != "H", at(x + 1, y) != "H"
+        if up and not down:
+            return 4
+        if left and not right and x < W // 2:
+            return 4
+        if down and not up:
+            return 1
+        if right and not left and x > W // 2:
+            return 1
+        return 3
+    if part in "SK":
+        t = cylinder_tone(x, y)
+        if part == "K":
+            t = min(5, t + 1)  # 매듭은 볼록해서 빛을 더 받는다
+        if at(x, y - 1) == "C":  # 컵 바로 아래 접촉 그림자
+            t -= 1
+        return t
+    if part == "T":
+        t = min(5, cylinder_tone(x, y) + 1)  # 윗면은 위에서 빛을 받아 밝다
+        if at(x, y - 1) == "F":  # 위 단 바로 아래(앞면이 놓인 자리)는 접촉 그림자
+            t = 1
+        return t
+    if part == "F":
+        t = cylinder_tone(x, y)
+        if y == H - 1:
+            t -= 1  # 맨 아랫줄은 바닥 쪽이라 어둡게
+        return t
+    raise ValueError(part)
 
-    # 실제로 쓰인 색만 남겨 번호를 다시 매긴다.
-    used = sorted(set(padded[padded >= 0].tolist()))
-    remap = {old: new for new, old in enumerate(used)}
-    palette = ["#%02X%02X%02X" % colors[i] for i in used]
-    rows = ["".join("." if v < 0 else "0123456789abcdef"[remap[v]] for v in row) for row in padded.tolist()]
-    return {"w": pw, "h": ph, "palette": palette, "rows": rows, "outline": remap[oi], "neon": NEON[name]}, star_cells
+
+def build(metal):
+    ramp, edge = metal["ramp"], metal["edge"]
+    # 팔레트: 0~5 금속 단계, 6 빛 쪽 외곽선, 7 그림자 쪽 외곽선, 8 손잡이 구멍(항상 어둡게, 네온 아님)
+    palette = ramp + [ramp[0], edge, edge]
+    pw, ph = W + 2, H + 2
+    grid = [[-1] * pw for _ in range(ph)]
+    for y in range(H):
+        for x in range(W):
+            if at(x, y) != ".":
+                grid[y + 1][x + 1] = max(0, min(5, tone(x, y)))
+
+    def filled(x, y):
+        return 0 <= x < pw and 0 <= y < ph and 0 <= grid[y][x] <= 5
+
+    # 바깥과 이어진 빈칸(손잡이 구멍처럼 갇힌 빈칸은 제외)
+    outside = set()
+    stack = [(0, 0)]
+    while stack:
+        x, y = stack.pop()
+        if (x, y) in outside or not (0 <= x < pw and 0 <= y < ph) or grid[y][x] != -1:
+            continue
+        outside.add((x, y))
+        stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+
+    # 외곽선: 그림에 맞닿은 바깥 빈칸. 그림이 아래·오른쪽에만 있으면(=빛 쪽 외곽) 6, 아니면 7.
+    # 손잡이 구멍은 통째로 어두운 8(다크 모드에서도 네온으로 칠하지 않는다).
+    edges = []
+    for y in range(ph):
+        for x in range(pw):
+            if grid[y][x] != -1:
+                continue
+            if (x, y) not in outside:
+                edges.append((x, y, 8))
+            elif any(filled(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                lit = (filled(x, y + 1) or filled(x + 1, y)) and not (filled(x, y - 1) or filled(x - 1, y))
+                edges.append((x, y, 6 if lit else 7))
+    for x, y, c in edges:
+        grid[y][x] = c
+    rows = ["".join("." if v < 0 else "0123456789abcdef"[v] for v in row) for row in grid]
+    return {"w": pw, "h": ph, "palette": palette, "rows": rows, "outline": [6, 7], "neon": metal["neon"]}
 
 
 def to_svg(sprite, neon=False):
-    """색마다 가로로 이어진 칸을 하나의 rect 경로로 합친 픽셀 SVG. neon=True면 외곽선을 네온색으로(다크 모드용)."""
+    """색마다 가로로 이어진 칸을 하나의 경로로 합친 픽셀 SVG. neon=True면 외곽선을 네온색으로(다크 모드용)."""
     paths = []
     for ci, color in enumerate(sprite["palette"]):
-        if neon and ci == sprite["outline"]:
+        if neon and ci in sprite["outline"]:
             color = sprite["neon"]
         key = "0123456789abcdef"[ci]
         d = []
@@ -158,23 +221,20 @@ def to_svg(sprite, neon=False):
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {sprite["w"]} {sprite["h"]}" '
         f'width="{sprite["w"] * 8}" height="{sprite["h"] * 8}" shape-rendering="crispEdges">\n'
-        "<!-- Pyxelate(MIT)로 픽셀화한 트로피 -->\n" + "\n".join(paths) + "\n</svg>\n"
+        + "\n".join(paths)
+        + "\n</svg>\n"
     )
 
 
 def main():
-    src_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("pix")
     OUT.mkdir(parents=True, exist_ok=True)
     data = {}
-    star_mask = None
-    for name in NAMES:  # 금을 먼저 만들어 별 위치를 얻는다
-        sprite, cells = build(name, src_dir, star_mask)
-        star_mask = star_mask or cells
+    for name, metal in METALS.items():
+        sprite = build(metal)
         data[f"{name}.svg"] = sprite
         (OUT / f"{name}.svg").write_text(to_svg(sprite), encoding="utf-8")
         (OUT / f"{name}-neon.svg").write_text(to_svg(sprite, neon=True), encoding="utf-8")
-        filled = sum(ch != "." for row in sprite["rows"] for ch in row)
-        print(f"{name}: {sprite['w']}×{sprite['h']} 칸, {len(sprite['palette'])}색, 채운 칸 {filled}개")
+        print(f"{name}: {sprite['w']}×{sprite['h']} 칸")
     (OUT / "pixels.json").write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
 
 

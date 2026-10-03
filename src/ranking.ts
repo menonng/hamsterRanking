@@ -254,13 +254,13 @@ interface PixelSprite {
   h: number;
   palette: string[];
   rows: string[];
-  outline?: number; // 외곽선 색 번호
+  outline?: number | number[]; // 외곽선 색 번호(빛 쪽·그림자 쪽 두 가지일 수 있다)
   neon?: string; // 다크 모드에서 외곽선에 쓰는 네온색
 }
 
 const pixelSprites = new Map<string, PixelSprite>();
 
-const TROPHY_FRAG_VERSION = "3"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
+const TROPHY_FRAG_VERSION = "4"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
 const trophyFragData = new Map<string, TrophyFragData>();
 const trophyFragImages = new Map<string, HTMLImageElement>();
 
@@ -412,7 +412,7 @@ function spawnPixelFragments(
   // 다크 모드에서는 화면의 트로피처럼 외곽선 칸을 네온색으로 칠한다.
   const palette = [...sprite.palette];
   if (document.documentElement.getAttribute("data-theme") === "dark" && sprite.neon && sprite.outline !== undefined) {
-    palette[sprite.outline] = sprite.neon;
+    for (const i of ([] as number[]).concat(sprite.outline)) palette[i] = sprite.neon;
   }
   const left = rect.left + (rect.width - sprite.w * scale) / 2;
   const top = rect.top + (rect.height - sprite.h * scale) / 2;
