@@ -1,12 +1,13 @@
 """픽셀 아트 트로피 생성기 (개발용, 결과물만 커밋한다).
 
 현재 트로피(primitive 도형 그림)를 Pyxelate(https://github.com/sedthh/pyxelate, MIT,
-© 2021 Richard Nagyfi)로 32×36 픽셀·소수 색 팔레트의 픽셀 아트로 줄인 뒤,
+© 2021 Richard Nagyfi)로 21×24 픽셀·소수 색 팔레트의 픽셀 아트로 줄인 뒤,
 픽셀 아트답게 다듬는다(외톨이 점 정리, 별 색 보정, 1픽셀 진한 외곽선).
 
     # 1) 원본 트로피를 416×480으로 렌더링한 PNG 준비: pix/src_{gold,silver,bronze}.png
     # 2) PYTHONPATH=<pyxelate 소스 경로> python3 scripts/pixel_trophy.py <src 디렉터리>
-    #    → assets/trophy/pixel/{gold,silver,bronze}.svg  (화면 표시용, 칸마다 rect)
+    #    → assets/trophy/pixel/{gold,silver,bronze}.svg       (화면 표시용, 칸마다 rect)
+    #    → assets/trophy/pixel/{gold,silver,bronze}-neon.svg  (다크 모드용: 외곽선 네온색)
     #    → assets/trophy/pixel/pixels.json               (파괴 연출용 픽셀 격자)
 
 필요: pyxelate 소스, scikit-learn, scikit-image, numba
@@ -24,9 +25,11 @@ from skimage import io
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "assets" / "trophy" / "pixel"
 NAMES = ["gold", "silver", "bronze"]
-FACTOR = 13  # 416×480 → 32×36 칸
+GRID_W, GRID_H = 21, 24  # 416×480 → 21×24 칸(한 칸이 예전 32×36 칸의 가로세로 1.5배)
 # 트로피별 (대비 배율, 밝기 이동, 팔레트 색 수). 은은 원본이 밝은 회색 위주라 대비를 키워야 음영이 남는다.
 SETTINGS = {"gold": (1.0, 0, 7), "silver": (1.6, -20, 6), "bronze": (1.0, 0, 7)}
+# 다크 모드용 네온 외곽선 색(지정 팔레트: 노랑·하늘·주황)
+NEON = {"gold": "#FFCC11", "silver": "#39C5BB", "bronze": "#FF7E00"}
 STAR_TINT = {"gold": None, "silver": (255, 255, 255), "bronze": None}
 
 
@@ -40,7 +43,7 @@ def neighbors_majority(grid, y, x):
     return votes.most_common(1)[0][0] if votes else -1
 
 
-def clean(grid, colors, min_count=6):
+def clean(grid, colors, min_count=4):
     """몇 칸 안 되는 색(가장자리 흰 테두리 등에서 생긴 얼룩)과 외톨이 칸을 주변 다수 색으로 바꾼다."""
     for _ in range(3):
         counts = Counter(grid[grid >= 0].tolist())
@@ -73,7 +76,7 @@ def build(name, src_dir, star_mask):
     mean = rgb[alpha[..., 0] > 127].mean(axis=0)
     rgb = np.clip((rgb - mean) * contrast + mean + shift, 0, 255)
     img = np.concatenate([rgb, alpha], axis=-1).astype(np.uint8)
-    out = Pyx(factor=FACTOR, palette=palette_size, dither="none", alpha=0.6).fit_transform(img)
+    out = Pyx(width=GRID_W, height=GRID_H, palette=palette_size, dither="none", alpha=0.6).fit_transform(img)
     h, w = out.shape[:2]
     opaque = out[..., 3] > 127
     colors = sorted({tuple(int(v) for v in out[y, x, :3]) for y in range(h) for x in range(w) if opaque[y, x]})
@@ -129,13 +132,15 @@ def build(name, src_dir, star_mask):
     remap = {old: new for new, old in enumerate(used)}
     palette = ["#%02X%02X%02X" % colors[i] for i in used]
     rows = ["".join("." if v < 0 else "0123456789abcdef"[remap[v]] for v in row) for row in padded.tolist()]
-    return {"w": pw, "h": ph, "palette": palette, "rows": rows}, star_cells
+    return {"w": pw, "h": ph, "palette": palette, "rows": rows, "outline": remap[oi], "neon": NEON[name]}, star_cells
 
 
-def to_svg(sprite):
-    """색마다 가로로 이어진 칸을 하나의 rect 경로로 합친 픽셀 SVG."""
+def to_svg(sprite, neon=False):
+    """색마다 가로로 이어진 칸을 하나의 rect 경로로 합친 픽셀 SVG. neon=True면 외곽선을 네온색으로(다크 모드용)."""
     paths = []
     for ci, color in enumerate(sprite["palette"]):
+        if neon and ci == sprite["outline"]:
+            color = sprite["neon"]
         key = "0123456789abcdef"[ci]
         d = []
         for y, row in enumerate(sprite["rows"]):
@@ -167,6 +172,7 @@ def main():
         star_mask = star_mask or cells
         data[f"{name}.svg"] = sprite
         (OUT / f"{name}.svg").write_text(to_svg(sprite), encoding="utf-8")
+        (OUT / f"{name}-neon.svg").write_text(to_svg(sprite, neon=True), encoding="utf-8")
         filled = sum(ch != "." for row in sprite["rows"] for ch in row)
         print(f"{name}: {sprite['w']}×{sprite['h']} 칸, {len(sprite['palette'])}색, 채운 칸 {filled}개")
     (OUT / "pixels.json").write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")

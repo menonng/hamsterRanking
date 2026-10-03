@@ -76,7 +76,8 @@ node scripts/rasterize_trophy.cjs          # → assets/trophy/*-frag.png (playw
 
 **픽셀 아트 버전**: 주소에 `?trophy=pixel`을 붙이면 트로피가 픽셀 아트로 바뀐다(`?trophy=primitive`는 원래 도형 트로피).
 기본값은 `src/ranking.ts`의 `DEFAULT_TROPHY_STYLE`로 정한다. 픽셀 트로피(`assets/trophy/pixel/`)는 지금의 도형 트로피를
-[Pyxelate](https://github.com/sedthh/pyxelate)(MIT, © 2021 Richard Nagyfi)로 32×36칸·5~7색으로 줄인 뒤, 외톨이 점 정리·별 색 보정·1픽셀 외곽선을 더한 것이다
+[Pyxelate](https://github.com/sedthh/pyxelate)(MIT, © 2021 Richard Nagyfi)로 21×24칸(외곽선 포함 23×26)·5~7색으로 줄인 뒤, 외톨이 점 정리·별 색 보정·1픽셀 외곽선을 더한 것이다.
+다크 모드에서는 외곽선을 네온색(금 #FFCC11 · 은 #39C5BB · 동 #FF7E00)으로 바꾼 그림(`*-neon.svg`)과 은은한 빛번짐으로 보인다
 (Pyxelate는 저장소에 포함하지 않고 생성할 때만 사용). 부서질 때는 그림을 이루는 픽셀 칸을 맞닿은 2~3칸씩 묶은 조각으로 흩어진다(캔버스로 그려 가볍다).
 다시 만들려면:
 
@@ -86,6 +87,9 @@ python3 -m http.server 8123 &
 node scripts/rasterize_trophy.cjs pixsrc /tmp/pix
 PYTHONPATH=/tmp/pyxelate python3 scripts/pixel_trophy.py /tmp/pix   # → assets/trophy/pixel/*.svg, pixels.json
 ```
+
+**순위 숫자 글꼴**: 트로피 위 숫자는 [GNU Unifont](https://unifoundry.com/unifont/)(SIL OFL 1.1, © Roman Czyborra, Paul Hardy 외)를
+[Fontsource](https://fontsource.org/fonts/unifont) 배포본에서 숫자 0~9만 남겨 줄인 `assets/fonts/unifont-digits.woff2`(1KB 미만)로 쓴다. 라이선스 전문: `assets/fonts/unifont-OFL.txt`.
 
 이전 모습으로 되돌리려면 `src/ranking.ts`의 `TROPHY_PODIUM`을 `false`로 바꾸고 다시 빌드하거나, 이 기능 커밋 하나를 `git revert` 하면 된다.
 

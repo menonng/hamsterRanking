@@ -1,3 +1,10 @@
+/* 트로피 위 순위 숫자: GNU Unifont(OFL 1.1) — 숫자 0~9만 남긴 경량 웹폰트(assets/fonts/unifont-OFL.txt) */
+@font-face {
+  font-family: "Unifont Digits";
+  src: url("./fonts/unifont-digits.woff2") format("woff2");
+  font-display: swap;
+}
+
 /* Hallmark · genre: editorial-restrained · macrostructure: custom (live scoreboard) · theme: custom (flat coral/violet, oklch anchor h75) */
 :root {
   /* ---------- 팔레트 (OKLCH, 따뜻한 축제 톤 anchor hue 75) ---------- */
@@ -456,17 +463,20 @@ section.card {
   left: 50%;
   top: 30%;
   transform: translate(-50%, -50%);
-  font-family: var(--font-mono);
-  font-weight: 800;
-  font-size: calc(var(--th) * 0.22);
+  font-family: "Unifont Digits", var(--font-mono);
+  font-weight: 400;
+  font-size: calc(var(--th) * 0.26);
   line-height: 1;
-  /* 밝은 별·금속 위 어디서든 읽히도록 흰 숫자 + 짙은 갈색 외곽선 */
+  /* Unifont는 획이 한 칸(1/16em) 굵기라 작으면 뭉개진다. 오른쪽으로 한 칸 겹쳐 그려 두 칸 굵기로 만들고,
+     그 아래로 한 칸 떨어지는 픽셀식 그림자를 준다. */
   color: #fff;
   text-shadow:
-    1px 1px 0 rgba(58, 28, 4, 0.9), -1px -1px 0 rgba(58, 28, 4, 0.9),
-    1px -1px 0 rgba(58, 28, 4, 0.9), -1px 1px 0 rgba(58, 28, 4, 0.9),
-    0 2px 4px rgba(0, 0, 0, 0.35);
+    0.0625em 0 0 #fff,
+    0.0625em 0.0625em 0 rgba(58, 28, 4, 0.92),
+    0.125em 0.0625em 0 rgba(58, 28, 4, 0.92);
 }
+/* 픽셀 트로피: 숫자의 한 칸이 트로피 한 칸의 절반이 되도록(트로피 26칸 높이 기준) 맞춘다 */
+.podium-card.trophy-pixel .podium-num { font-size: calc(var(--th) * 8 / 26); top: 34%; }
 
 /* ---------- 4~10위 / 11위 이하 리스트 ---------- */
 
@@ -715,6 +725,26 @@ section.card {
   contain-intrinsic-size: auto 560px;
 }
 
+/* ---------- 픽셀 트로피: 낮엔 진한 외곽선, 다크 모드엔 네온 외곽선 + 은은한 빛번짐 ---------- */
+.podium-card.trophy-pixel.rank-1 { --neon: #FFCC11; }
+.podium-card.trophy-pixel.rank-2 { --neon: #39C5BB; }
+.podium-card.trophy-pixel.rank-3 { --neon: #FF7E00; }
+.podium-card.trophy-pixel .trophy-neon { display: none; }
+:root[data-theme="dark"] .podium-card.trophy-pixel .trophy-day { display: none; }
+:root[data-theme="dark"] .podium-card.trophy-pixel .trophy-neon {
+  display: block;
+  filter: drop-shadow(0 0 2px var(--neon)) drop-shadow(0 0 7px color-mix(in srgb, var(--neon) 55%, transparent));
+}
+:root[data-theme="dark"] .podium-card.trophy-pixel .podium-num {
+  color: #fff;
+  text-shadow:
+    0.0625em 0 0 #fff,
+    0.0625em 0.0625em 0 rgba(0, 0, 0, 0.75),
+    0.125em 0.0625em 0 rgba(0, 0, 0, 0.75),
+    0 0 4px var(--neon), 0 0 10px var(--neon);
+}
+html.lite[data-theme="dark"] .podium-card.trophy-pixel .trophy-neon { filter: drop-shadow(0 0 2px var(--neon)); }
+
 /* ---------- 저사양 모드 (html.lite): 구형 노트북·폰에서 계속 도는 효과와 큰 화면 합성을 뺀다 ---------- */
 html.lite .live-dot.live-ok::after { animation: none; display: none; }
 html.lite .podium.impact::after { display: none; }
@@ -941,4 +971,5 @@ details.settings summary {
   .ai-badge { background: var(--paper-2); color: var(--color-accent-2); border-color: var(--rule); }
   :root[data-theme="dark"] .ai-badge { background: var(--paper-3); color: #fff; }
   .form-error { background: var(--paper-2); }
+  :root[data-theme="dark"] .podium-card.trophy-pixel .trophy-neon { filter: drop-shadow(0 0 2px var(--neon)) drop-shadow(0 0 6px var(--neon)); }
 }

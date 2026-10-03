@@ -151,6 +151,20 @@ function podiumKey(p: Placed, leaderTime: number): string {
   return `${p.r.id}|${p.place}|${p.tied}|${gapText(p.r.time, leaderTime)}`;
 }
 
+/** 트로피 그림. 픽셀 트로피는 다크 모드용 네온 외곽선 그림을 하나 더 두고 테마에 따라 CSS로 골라 보인다. */
+function trophyImgs(rank: number): string {
+  const file = TROPHY_FILES[rank - 1] ?? "";
+  if (TROPHY_STYLE !== "pixel") return `<img class="trophy-step" src="${TROPHY_DIR}/${file}" alt="" />`;
+  const neon = file.replace(/\.svg$/, "-neon.svg");
+  return `<img class="trophy-step trophy-day" src="${TROPHY_DIR}/${file}" alt="" /><img class="trophy-step trophy-neon" src="${TROPHY_DIR}/${neon}" alt="" />`;
+}
+
+/** 지금 화면에 보이는 트로피 그림(테마에 따라 숨겨진 쪽은 건너뛴다). */
+function visibleTrophyImg(card: HTMLElement): HTMLImageElement | null {
+  const imgs = Array.from(card.querySelectorAll<HTMLImageElement>(".trophy-step"));
+  return imgs.find((i) => i.getClientRects().length > 0) ?? imgs[0] ?? null;
+}
+
 function podiumCard(p: Placed, rank: number, dropDelayClass: boolean, leaderTime: number): string {
   const r = p.r;
   const color = MEDAL_COLORS[rank - 1];
@@ -168,7 +182,7 @@ function podiumCard(p: Placed, rank: number, dropDelayClass: boolean, leaderTime
       </div>
       <div class="podium-step">${
         TROPHY_PODIUM
-          ? `<img class="trophy-step" src="${TROPHY_DIR}/${TROPHY_FILES[rank - 1]}" alt="" /><span class="podium-num">${rank}</span>`
+          ? `${trophyImgs(rank)}<span class="podium-num">${rank}</span>`
           : rank
       }</div>
     </div>`;
@@ -240,11 +254,13 @@ interface PixelSprite {
   h: number;
   palette: string[];
   rows: string[];
+  outline?: number; // 외곽선 색 번호
+  neon?: string; // 다크 모드에서 외곽선에 쓰는 네온색
 }
 
 const pixelSprites = new Map<string, PixelSprite>();
 
-const TROPHY_FRAG_VERSION = "2"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
+const TROPHY_FRAG_VERSION = "3"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
 const trophyFragData = new Map<string, TrophyFragData>();
 const trophyFragImages = new Map<string, HTMLImageElement>();
 
@@ -387,12 +403,17 @@ function spawnPixelFragments(
   ox: number,
   oy: number,
 ): boolean {
-  const img = card.querySelector<HTMLImageElement>(".trophy-step");
+  const img = visibleTrophyImg(card);
   const sprite = pixelSprites.get(TROPHY_FILES[rank - 1] ?? "");
   if (!img || !sprite) return false;
 
   const rect = img.getBoundingClientRect();
   const scale = Math.min(rect.width / sprite.w, rect.height / sprite.h); // 한 칸의 화면 크기(px)
+  // 다크 모드에서는 화면의 트로피처럼 외곽선 칸을 네온색으로 칠한다.
+  const palette = [...sprite.palette];
+  if (document.documentElement.getAttribute("data-theme") === "dark" && sprite.neon && sprite.outline !== undefined) {
+    palette[sprite.outline] = sprite.neon;
+  }
   const left = rect.left + (rect.width - sprite.w * scale) / 2;
   const top = rect.top + (rect.height - sprite.h * scale) / 2;
 
@@ -450,7 +471,7 @@ function spawnPixelFragments(
     const blocks = group.map((k) => ({
       x: ((k % sprite.w) - cx) * scale,
       y: (Math.floor(k / sprite.w) - cy) * scale,
-      fill: sprite.palette[color.get(k) ?? 0] ?? "#000",
+      fill: palette[color.get(k) ?? 0] ?? "#000",
     }));
     const baseX = left + cx * scale;
     const baseY = top + cy * scale;
@@ -480,7 +501,7 @@ function spawnTrophyFragments(
   ox: number,
   oy: number,
 ): boolean {
-  const img = card.querySelector<HTMLImageElement>(".trophy-step");
+  const img = visibleTrophyImg(card);
   const file = TROPHY_FILES[rank - 1] ?? "";
   const data = trophyFragData.get(file);
   const art = trophyFragImages.get(file);
