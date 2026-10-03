@@ -24,7 +24,7 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 const TROPHY_PODIUM = true;
 const TROPHY_FILES = ["gold.svg", "silver.svg", "bronze.svg"];
 // 트로피 그림 스타일: "primitive"(도형 조합) | "pixel"(Pyxelate로 만든 픽셀 아트). 주소에 ?trophy=pixel 로 바꿔 볼 수 있다.
-const DEFAULT_TROPHY_STYLE = "primitive";
+const DEFAULT_TROPHY_STYLE = "pixel";
 const TROPHY_STYLE = (() => {
     const q = new URLSearchParams(location.search).get("trophy");
     return q === "pixel" || q === "primitive" ? q : DEFAULT_TROPHY_STYLE;

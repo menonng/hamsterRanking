@@ -80,7 +80,7 @@ node scripts/rasterize_trophy.cjs          # → assets/trophy/*-frag.png (playw
 ```
 그 뒤 `src/ranking.ts`의 `TROPHY_FRAG_VERSION`을 올려 캐시를 무효화한다.
 
-**픽셀 아트 버전**: 주소에 `?trophy=pixel`을 붙이면 트로피가 픽셀 아트로 바뀐다(`?trophy=primitive`는 원래 도형 트로피).
+**픽셀 아트 버전(기본)**: 트로피는 기본으로 픽셀 아트로 보인다. 주소에 `?trophy=primitive`를 붙이면 도형 트로피로, `?trophy=pixel`은 픽셀로 강제한다.
 기본값은 `src/ranking.ts`의 `DEFAULT_TROPHY_STYLE`로 정한다. 픽셀 트로피(`assets/trophy/pixel/`, 21×24칸 + 외곽선)는
 `scripts/pixel_trophy.py`에 부위별 실루엣(테두리·입구·컵·손잡이·기둥·매듭·2단 받침대)을 칸 단위로 그려 두고,
 빛이 왼쪽 위에서 온다고 보고 금속 6단계 색으로 명암을 칠해 만든다: 원통 음영(왼쪽 반사띠 → 오른쪽 그림자, 오른쪽 끝 반사광),
