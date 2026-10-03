@@ -74,6 +74,19 @@ node scripts/rasterize_trophy.cjs          # → assets/trophy/*-frag.png (playw
 ```
 그 뒤 `src/ranking.ts`의 `TROPHY_FRAG_VERSION`을 올려 캐시를 무효화한다.
 
+**픽셀 아트 버전**: 주소에 `?trophy=pixel`을 붙이면 트로피가 픽셀 아트로 바뀐다(`?trophy=primitive`는 원래 도형 트로피).
+기본값은 `src/ranking.ts`의 `DEFAULT_TROPHY_STYLE`로 정한다. 픽셀 트로피(`assets/trophy/pixel/`)는 지금의 도형 트로피를
+[Pyxelate](https://github.com/sedthh/pyxelate)(MIT, © 2021 Richard Nagyfi)로 32×36칸·5~7색으로 줄인 뒤, 외톨이 점 정리·별 색 보정·1픽셀 외곽선을 더한 것이다
+(Pyxelate는 저장소에 포함하지 않고 생성할 때만 사용). 부서질 때는 그림을 이루는 픽셀 칸을 맞닿은 2~3칸씩 묶은 조각으로 흩어진다(캔버스로 그려 가볍다).
+다시 만들려면:
+
+```bash
+git clone https://github.com/sedthh/pyxelate.git /tmp/pyxelate && pip install scikit-learn scikit-image numba
+python3 -m http.server 8123 &
+node scripts/rasterize_trophy.cjs pixsrc /tmp/pix
+PYTHONPATH=/tmp/pyxelate python3 scripts/pixel_trophy.py /tmp/pix   # → assets/trophy/pixel/*.svg, pixels.json
+```
+
 이전 모습으로 되돌리려면 `src/ranking.ts`의 `TROPHY_PODIUM`을 `false`로 바꾸고 다시 빌드하거나, 이 기능 커밋 하나를 `git revert` 하면 된다.
 
 **연출 확인용 단축키**: 주소 끝에 `?preview`를 붙여 연 경우에만, `q` / `w` / `e`로 1 / 2 / 3위 카드의 교체 연출을 재생한다

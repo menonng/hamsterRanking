@@ -23,6 +23,13 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 // 프로토타입: 1~3위 "단" 자체를 도형 조합(primitive) 트로피로 그린다. false로 바꾸면 이전 모습으로 돌아간다.
 const TROPHY_PODIUM = true;
 const TROPHY_FILES = ["gold.svg", "silver.svg", "bronze.svg"];
+// 트로피 그림 스타일: "primitive"(도형 조합) | "pixel"(Pyxelate로 만든 픽셀 아트). 주소에 ?trophy=pixel 로 바꿔 볼 수 있다.
+const DEFAULT_TROPHY_STYLE = "primitive";
+const TROPHY_STYLE = (() => {
+    const q = new URLSearchParams(location.search).get("trophy");
+    return q === "pixel" || q === "primitive" ? q : DEFAULT_TROPHY_STYLE;
+})();
+const TROPHY_DIR = TROPHY_STYLE === "pixel" ? "./assets/trophy/pixel" : "./assets/trophy";
 const REST_GROUP_SIZE = 10; // 11위 이하는 10명씩 박스를 나눈다
 const ROW_FLIP_MS = 500;
 const PODIUM_DROP_MS = 600 + 160; // 애니메이션 길이 + 3위 stagger 지연
@@ -131,7 +138,7 @@ function podiumKey(p, leaderTime) {
 function podiumCard(p, rank, dropDelayClass, leaderTime) {
     const r = p.r;
     const color = MEDAL_COLORS[rank - 1];
-    const cls = `podium-card rank-${rank}${TROPHY_PODIUM ? " trophy" : ""}${dropDelayClass ? " drop" : ""}`;
+    const cls = `podium-card rank-${rank}${TROPHY_PODIUM ? ` trophy trophy-${TROPHY_STYLE}` : ""}${dropDelayClass ? " drop" : ""}`;
     const gap = rank > 1 ? `<div class="podium-gap">${gapText(r.time, leaderTime)}</div>` : "";
     const tie = p.tied ? `<div class="podium-tie">공동 ${p.place}위</div>` : "";
     return `
@@ -144,7 +151,7 @@ function podiumCard(p, rank, dropDelayClass, leaderTime) {
         ${gap}
       </div>
       <div class="podium-step">${TROPHY_PODIUM
-        ? `<img class="trophy-step" src="./assets/trophy/${TROPHY_FILES[rank - 1]}" alt="" /><span class="podium-num">${rank}</span>`
+        ? `<img class="trophy-step" src="${TROPHY_DIR}/${TROPHY_FILES[rank - 1]}" alt="" /><span class="podium-num">${rank}</span>`
         : rank}</div>
     </div>`;
 }
@@ -188,13 +195,27 @@ const GRAVITY = 2600; // px/s²
 const BLAST_DRAG = 0.8; // 1/s — 공기 저항(튀어나가는 속도를 서서히 줄인다)
 const BLAST_RESOLVE_MS = 650; // 이 시간 뒤 새 카드가 떨어지기 시작(파편은 계속 떨어진다)
 const BLAST_MAX_MS = 6000;
-const TROPHY_FRAG_VERSION = "1"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
+const pixelSprites = new Map();
+const TROPHY_FRAG_VERSION = "2"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
 const trophyFragData = new Map();
 const trophyFragImages = new Map();
 /** 파편 데이터와 트로피 그림을 미리 받아둔다(첫 화면 로딩을 방해하지 않게 한가할 때). */
 function prefetchTrophies() {
     if (!TROPHY_PODIUM)
         return;
+    if (TROPHY_STYLE === "pixel") {
+        fetch(`${TROPHY_DIR}/pixels.json?v=${TROPHY_FRAG_VERSION}`)
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+            .then((data) => {
+            for (const file of TROPHY_FILES) {
+                const sprite = data[file];
+                if (sprite && Array.isArray(sprite.rows) && Array.isArray(sprite.palette))
+                    pixelSprites.set(file, sprite);
+            }
+        })
+            .catch(() => undefined);
+        return;
+    }
     const load = () => {
         fetch(`./assets/trophy/fragments.json?v=${TROPHY_FRAG_VERSION}`)
             .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
@@ -232,6 +253,8 @@ function makePiece(cx, cy, ox, oy, el, apply, heft = 1) {
     return { x: 0, y: 0, vx: vx / heft, vy: vy / heft, angle: 0, spin: ((Math.random() * 2 - 1) * 9) / heft, baseX: cx, baseY: cy, done: false, apply, el };
 }
 function runBlast(pieces, layer) {
+    const canvas = layer.querySelector("canvas");
+    const ctx = canvas?.getContext("2d") ?? null;
     const start = performance.now();
     let last = start;
     let frames = 0;
@@ -246,6 +269,10 @@ function runBlast(pieces, layer) {
         const k = Math.exp(-BLAST_DRAG * dt);
         const w = window.innerWidth;
         const h = window.innerHeight;
+        if (ctx && canvas) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
         let alive = 0;
         for (const p of pieces) {
             if (p.done)
@@ -257,11 +284,13 @@ function runBlast(pieces, layer) {
             p.y += p.vy * dt;
             p.angle += p.spin * dt;
             p.apply(p);
+            if (ctx && p.draw)
+                p.draw(ctx, p);
             const sx = p.baseX + p.x;
             const sy = p.baseY + p.y;
             if ((sy > h + 160 && p.vy > 0) || sx < -400 || sx > w + 400) {
                 p.done = true;
-                p.el.remove();
+                p.el?.remove();
             }
             else
                 alive++;
@@ -280,6 +309,95 @@ function polygonCentroid(clipPath) {
 }
 const SVG_NS = "http://www.w3.org/2000/svg";
 const XLINK_NS = "http://www.w3.org/1999/xlink";
+/**
+ * 픽셀 트로피를 부순다. 이 그림을 이루는 도형은 픽셀 칸이므로, 맞닿은 칸 2~3개를 묶은 덩어리가 파편 하나다
+ * (매번 묶는 방식이 달라 부서지는 모양도 매번 다르다). 데이터가 아직 없으면 false.
+ */
+function spawnPixelFragments(card, rank, layer, pieces, ox, oy) {
+    const img = card.querySelector(".trophy-step");
+    const sprite = pixelSprites.get(TROPHY_FILES[rank - 1] ?? "");
+    if (!img || !sprite)
+        return false;
+    const rect = img.getBoundingClientRect();
+    const scale = Math.min(rect.width / sprite.w, rect.height / sprite.h); // 한 칸의 화면 크기(px)
+    const left = rect.left + (rect.width - sprite.w * scale) / 2;
+    const top = rect.top + (rect.height - sprite.h * scale) / 2;
+    // 채워진 칸 목록과 칸 → 색 번호
+    const color = new Map();
+    sprite.rows.forEach((row, y) => {
+        for (let x = 0; x < row.length; x++) {
+            const ch = row[x] ?? ".";
+            if (ch !== ".")
+                color.set(y * sprite.w + x, parseInt(ch, 16));
+        }
+    });
+    const cells = [...color.keys()].sort(() => Math.random() - 0.5);
+    const taken = new Set();
+    const neighborsOf = (k) => {
+        const x = k % sprite.w;
+        const out = [];
+        if (x > 0)
+            out.push(k - 1);
+        if (x < sprite.w - 1)
+            out.push(k + 1);
+        out.push(k - sprite.w, k + sprite.w);
+        return out.filter((n) => color.has(n) && !taken.has(n));
+    };
+    // 픽셀 조각은 단색 사각형뿐이라, 수백 개를 SVG로 다시 그리는 대신 캔버스 한 장에 직접 칠한다(구형 기기용).
+    // 픽셀 그림이라 고해상도가 필요 없으므로 캔버스는 화면 픽셀 1배로 둔다.
+    let canvas = layer.querySelector("canvas");
+    if (!canvas) {
+        canvas = document.createElement("canvas");
+        canvas.className = "pixel-frags";
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        layer.appendChild(canvas);
+    }
+    const cellSize = scale * 1.04; // 회전해도 칸 사이에 틈이 보이지 않게 아주 살짝 크게
+    for (const seed of cells) {
+        if (taken.has(seed))
+            continue;
+        taken.add(seed);
+        const group = [seed];
+        const want = Math.random() < 0.5 ? 2 : 3;
+        while (group.length < want) {
+            const next = group.flatMap(neighborsOf)[0];
+            if (next === undefined)
+                break;
+            taken.add(next);
+            group.push(next);
+        }
+        let cx = 0;
+        let cy = 0;
+        for (const k of group) {
+            cx += (k % sprite.w) + 0.5;
+            cy += Math.floor(k / sprite.w) + 0.5;
+        }
+        cx /= group.length;
+        cy /= group.length;
+        // 무게중심 기준 각 칸의 위치(px)와 색을 미리 계산해 둔다.
+        const blocks = group.map((k) => ({
+            x: ((k % sprite.w) - cx) * scale,
+            y: (Math.floor(k / sprite.w) - cy) * scale,
+            fill: sprite.palette[color.get(k) ?? 0] ?? "#000",
+        }));
+        const baseX = left + cx * scale;
+        const baseY = top + cy * scale;
+        const piece = makePiece(baseX, baseY, ox, oy, null, () => undefined);
+        piece.draw = (ctx, p) => {
+            const cos = Math.cos(p.angle);
+            const sin = Math.sin(p.angle);
+            ctx.setTransform(cos, sin, -sin, cos, baseX + p.x, baseY + p.y);
+            for (const bl of blocks) {
+                ctx.fillStyle = bl.fill;
+                ctx.fillRect(bl.x, bl.y, cellSize, cellSize);
+            }
+        };
+        pieces.push(piece);
+    }
+    card.classList.add("trophy-shattering");
+    return true;
+}
 /** 트로피를 그린 도형 기반의 파편들로 트로피(단)를 부순다. 데이터·그림이 아직 없으면 false. */
 function spawnTrophyFragments(card, rank, layer, pieces, ox, oy) {
     const img = card.querySelector(".trophy-step");
@@ -345,7 +463,8 @@ function spawnShatter(card) {
         const pieces = [];
         // 트로피(단)는 트로피를 그린 도형 기반 파편으로, 정보 박스(podium-top)는 박스 그대로의 금 간 조각으로 부순다.
         // (트로피 파편을 못 만들면 트로피까지 포함한 카드 전체를 금 간 조각으로 부순다.)
-        const trophyDone = card.classList.contains("trophy") && spawnTrophyFragments(card, Number(card.dataset.rank), layer, pieces, ox, oy);
+        const spawnFrags = TROPHY_STYLE === "pixel" ? spawnPixelFragments : spawnTrophyFragments;
+        const trophyDone = card.classList.contains("trophy") && spawnFrags(card, Number(card.dataset.rank), layer, pieces, ox, oy);
         const top = card.querySelector(".podium-top");
         const shardRect = trophyDone && top ? top.getBoundingClientRect() : cardRect;
         // 조각마다 실제 카드의 복제본을 넣고 조각 모양으로 잘라, 단색 도형이 아니라 박스 자체가 깨지게 한다.

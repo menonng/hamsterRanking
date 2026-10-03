@@ -636,6 +636,12 @@ section.card {
   animation: none !important;
   transform: none !important;
 }
+.blast-layer .pixel-frags {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+}
 /* 트로피 파편(인라인 SVG). 그림자 필터는 매 프레임 비용이 커서 파편에는 쓰지 않는다. */
 .trophy-frags {
   position: fixed;
