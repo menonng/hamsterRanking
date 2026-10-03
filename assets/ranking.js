@@ -209,7 +209,7 @@ const BLAST_DRAG = 0.8; // 1/s — 공기 저항(튀어나가는 속도를 서�
 const BLAST_RESOLVE_MS = 650; // 이 시간 뒤 새 카드가 떨어지기 시작(파편은 계속 떨어진다)
 const BLAST_MAX_MS = 6000;
 const pixelSprites = new Map();
-const TROPHY_FRAG_VERSION = "4"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
+const TROPHY_FRAG_VERSION = "5"; // fragments.json·*-frag.png를 다시 생성하면 올린다(캐시 무효화)
 const trophyFragData = new Map();
 const trophyFragImages = new Map();
 /** 파편 데이터와 트로피 그림을 미리 받아둔다(첫 화면 로딩을 방해하지 않게 한가할 때). */
@@ -333,12 +333,9 @@ function spawnPixelFragments(card, rank, layer, pieces, ox, oy) {
         return false;
     const rect = img.getBoundingClientRect();
     const scale = Math.min(rect.width / sprite.w, rect.height / sprite.h); // 한 칸의 화면 크기(px)
-    // 다크 모드에서는 화면의 트로피처럼 외곽선 칸을 네온색으로 칠한다.
-    const palette = [...sprite.palette];
-    if (document.documentElement.getAttribute("data-theme") === "dark" && sprite.neon && sprite.outline !== undefined) {
-        for (const i of [].concat(sprite.outline))
-            palette[i] = sprite.neon;
-    }
+    // 다크 모드에서는 화면의 트로피처럼 고대비 네온 팔레트로 칠한다.
+    const dark = document.documentElement.getAttribute("data-theme") === "dark";
+    const palette = dark && sprite.hc?.length === sprite.palette.length ? sprite.hc : sprite.palette;
     const left = rect.left + (rect.width - sprite.w * scale) / 2;
     const top = rect.top + (rect.height - sprite.h * scale) / 2;
     // 채워진 칸 목록과 칸 → 색 번호

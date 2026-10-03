@@ -10,7 +10,7 @@
 
     python3 scripts/pixel_trophy.py
     → assets/trophy/pixel/{gold,silver,bronze}.svg       (화면 표시용)
-    → assets/trophy/pixel/{gold,silver,bronze}-neon.svg  (다크 모드용: 외곽선 네온색)
+    → assets/trophy/pixel/{gold,silver,bronze}-neon.svg  (다크 모드용: 검정·네온·흰색 고대비)
     → assets/trophy/pixel/pixels.json                    (파괴 연출용 픽셀 격자)
 """
 import json
@@ -195,15 +195,25 @@ def build(metal):
     for x, y, c in edges:
         grid[y][x] = c
     rows = ["".join("." if v < 0 else "0123456789abcdef"[v] for v in row) for row in grid]
-    return {"w": pw, "h": ph, "palette": palette, "rows": rows, "outline": [6, 7], "neon": metal["neon"]}
+    return {"w": pw, "h": ph, "palette": palette, "hc": high_contrast(metal["neon"]), "rows": rows, "outline": [6, 7], "neon": metal["neon"]}
+
+
+def mix(hex_color, amount):
+    """hex_color를 검정과 섞는다(amount = 원래 색 비율)."""
+    r, g, b = (int(hex_color[i : i + 2], 16) for i in (1, 3, 5))
+    return "#%02X%02X%02X" % (round(r * amount), round(g * amount), round(b * amount))
+
+
+def high_contrast(neon):
+    """다크 모드용 고대비 팔레트: 검정 바탕 위에 네온과 흰색만으로 명암을 표현한다(번짐 없이 또렷하게).
+    0~1 그림자 → 검정, 2~3 중간 → 어두운 네온, 4 빛 받는 면 → 네온, 5 반사띠 → 흰색, 외곽선 → 네온, 구멍 → 검정."""
+    return ["#000000", "#000000", mix(neon, 0.28), mix(neon, 0.5), neon, "#FFFFFF", neon, neon, "#000000"]
 
 
 def to_svg(sprite, neon=False):
-    """색마다 가로로 이어진 칸을 하나의 경로로 합친 픽셀 SVG. neon=True면 외곽선을 네온색으로(다크 모드용)."""
+    """색마다 가로로 이어진 칸을 하나의 경로로 합친 픽셀 SVG. neon=True면 고대비 네온 팔레트로(다크 모드용)."""
     paths = []
-    for ci, color in enumerate(sprite["palette"]):
-        if neon and ci in sprite["outline"]:
-            color = sprite["neon"]
+    for ci, color in enumerate(sprite["hc"] if neon else sprite["palette"]):
         key = "0123456789abcdef"[ci]
         d = []
         for y, row in enumerate(sprite["rows"]):
