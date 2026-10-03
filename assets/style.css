@@ -58,28 +58,30 @@
 }
 
 :root[data-theme="dark"] {
-  --paper: #160D08;
-  --paper-2: #201610;
-  --paper-3: #2D211A;
-  --card: #1E130E;
-  --ink: #EFEAE4;
-  --ink-dim: #AAA49B;
-  --rule: #392E27;
-  --neutral-badge: #362C24;
+  /* 다크 모드 = 고대비 테마: 순수 검정 바탕, 흰 글자, 흰 테두리로 구조를 잡고 강조는 지정 팔레트의 밝은 색만 쓴다 */
+  --paper: #000000;
+  --paper-2: #141414;
+  --paper-3: #1F1F1F;
+  --card: #000000;
+  --ink: #FFFFFF;
+  --ink-dim: #D9D9D9;
+  --rule: #6E6E6E;       /* 줄 사이 구분선(카드 테두리는 --hc-line) */
+  --hc-line: #FFFFFF;
+  --neutral-badge: #000000;
 
-  --color-accent: #FF7E00;
-  --color-accent-ink: #241100;
-  --color-accent-2: #A882CA; /* 보라 #660099를 밝힌 근색(어두운 배경용) */
-  --color-focus: #FF7E00;
+  --color-accent: #FFCC11;      /* 노랑 — 고대비 강조·포커스 */
+  --color-accent-ink: #000000;
+  --color-accent-2: #FFB4CC;    /* 분홍 — AI 표식 */
+  --color-focus: #FFCC11;
   --color-success: #55BB44;
   --color-warn: #FFCC11;
   --color-danger: #FF0045;
   --title-face: #EE6A4A;
   --title-shadow: #843825;
 
-  --medal-gold: #EDB417;
-  --medal-silver: #C1C8D2;
-  --medal-bronze: #C37552;
+  --medal-gold: #FFCC11;   /* 트로피 네온색과 맞춘다 */
+  --medal-silver: #39C5BB;
+  --medal-bronze: #FF7E00;
 }
 
 * { box-sizing: border-box; }
@@ -972,4 +974,29 @@ details.settings summary {
   .ai-badge { background: var(--paper-2); color: var(--color-accent-2); border-color: var(--rule); }
   :root[data-theme="dark"] .ai-badge { background: var(--paper-3); color: #fff; }
   .form-error { background: var(--paper-2); }
+}
+
+/* ---------- 다크 모드 = 고대비 테마: 면 대신 선명한 테두리로 구분, 흐림·반투명·은은한 색 섞기 없이 ---------- */
+:root[data-theme="dark"] ::selection { background: #FFCC11; color: #000; }
+:root[data-theme="dark"] header.top { background: #000; border-bottom: 2px solid var(--hc-line); }
+:root[data-theme="dark"] .status-pill { border-color: var(--hc-line); color: #fff; }
+:root[data-theme="dark"] section.card { border: 2px solid var(--hc-line); }
+:root[data-theme="dark"] .card h2 { color: #fff; }
+:root[data-theme="dark"] .h2-icon { border-color: var(--hc-line); }
+:root[data-theme="dark"] .podium-card,
+:root[data-theme="dark"] .podium-card.trophy .podium-top {
+  border: 2px solid var(--hc-line);
+  border-top: 4px solid var(--accent);
+}
+:root[data-theme="dark"] .podium-card.trophy { border: none; }
+:root[data-theme="dark"] .podium-meta,
+:root[data-theme="dark"] .podium-gap { color: var(--ink-dim); }
+:root[data-theme="dark"] .podium-tie { background: #000; color: #fff; border: 1px solid var(--accent); }
+:root[data-theme="dark"] .row-rank { box-sizing: border-box; border: 2px solid var(--hc-line); }
+:root[data-theme="dark"] .row-time { color: #fff; }   /* 파랑·보라 같은 어두운 팔레트색은 검정 위 글자로 대비가 부족해 흰색으로 */
+:root[data-theme="dark"] .ai-badge { background: #000; color: var(--color-accent-2); border: 1px solid var(--color-accent-2); }
+:root[data-theme="dark"] .toggle-track { background: #FFCC11; border: 1px solid #FFCC11; }
+:root[data-theme="dark"] .toggle-thumb { background: #000; }
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme="dark"] .row:hover { background: var(--paper-3); }
 }
