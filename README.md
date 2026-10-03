@@ -42,6 +42,12 @@ GitHub Pages로 열면 누구나 랭킹을 볼 수 있습니다. **이 저장소
 2. **공개 랭킹 화면(이 저장소)**: `index.html`이 8초 간격으로 `data/records.json`을 폴링해 최신 데이터를 반영합니다.
    push 후 GitHub Pages가 재배포되기까지 보통 수십 초 걸립니다.
 
+## 새 배포 자동 반영
+
+GitHub Pages는 HTML을 최대 10분간 캐시해, 배포 직후에도 예전 화면이 보일 수 있다. 그래서 `npm run build`가 배포 식별값(build id)을
+`index.html`의 `<meta name="build-id">`와 `assets/build.json`에 같이 써 두고, 화면은 `build.json`을 열 때·1분마다·화면으로 돌아올 때 확인해
+값이 다르면 스스로 새로고침한다(연출 도중엔 기다리고, 같은 배포로는 최대 3번까지만). 트로피 그림·파편 데이터 주소에도 이 값을 붙인다.
+
 ## GitHub Pages 배포
 
 `.github/workflows/deploy-pages.yml`이 **`claude/gracious-sagan-mzkdnd` 브랜치에** push될 때마다 저장소 루트를 GitHub Pages로 자동 배포합니다.

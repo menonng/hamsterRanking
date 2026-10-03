@@ -30,6 +30,8 @@ const TROPHY_STYLE = (() => {
     return q === "pixel" || q === "primitive" ? q : DEFAULT_TROPHY_STYLE;
 })();
 const TROPHY_DIR = TROPHY_STYLE === "pixel" ? "./assets/trophy/pixel" : "./assets/trophy";
+// 이 화면을 만든 배포의 식별값(빌드 때 index.html에 자동으로 들어간다). 그림·데이터 파일 캐시 무효화에도 쓴다.
+const BUILD_ID = document.querySelector('meta[name="build-id"]')?.content ?? "";
 const REST_GROUP_SIZE = 10; // 11위 이하는 10명씩 박스를 나눈다
 const ROW_FLIP_MS = 500;
 const PODIUM_DROP_MS = 600 + 160; // 애니메이션 길이 + 3위 stagger 지연
@@ -138,10 +140,11 @@ function podiumKey(p, leaderTime) {
 /** 트로피 그림. 픽셀 트로피는 다크 모드용 네온 외곽선 그림을 하나 더 두고 테마에 따라 CSS로 골라 보인다. */
 function trophyImgs(rank) {
     const file = TROPHY_FILES[rank - 1] ?? "";
+    const v = `?v=${BUILD_ID || TROPHY_FRAG_VERSION}`;
     if (TROPHY_STYLE !== "pixel")
-        return `<img class="trophy-step" src="${TROPHY_DIR}/${file}" alt="" />`;
+        return `<img class="trophy-step" src="${TROPHY_DIR}/${file}${v}" alt="" />`;
     const neon = file.replace(/\.svg$/, "-neon.svg");
-    return `<img class="trophy-step trophy-day" src="${TROPHY_DIR}/${file}" alt="" /><img class="trophy-step trophy-neon" src="${TROPHY_DIR}/${neon}" alt="" />`;
+    return `<img class="trophy-step trophy-day" src="${TROPHY_DIR}/${file}${v}" alt="" /><img class="trophy-step trophy-neon" src="${TROPHY_DIR}/${neon}${v}" alt="" />`;
 }
 /** 지금 화면에 보이는 트로피 그림(테마에 따라 숨겨진 쪽은 건너뛴다). */
 function visibleTrophyImg(card) {
@@ -217,7 +220,7 @@ function prefetchTrophies() {
     if (!TROPHY_PODIUM)
         return;
     if (TROPHY_STYLE === "pixel") {
-        fetch(`${TROPHY_DIR}/pixels.json?v=${TROPHY_FRAG_VERSION}`)
+        fetch(`${TROPHY_DIR}/pixels.json?v=${BUILD_ID || TROPHY_FRAG_VERSION}`)
             .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
             .then((data) => {
             for (const file of TROPHY_FILES) {
@@ -230,7 +233,7 @@ function prefetchTrophies() {
         return;
     }
     const load = () => {
-        fetch(`./assets/trophy/fragments.json?v=${TROPHY_FRAG_VERSION}`)
+        fetch(`./assets/trophy/fragments.json?v=${BUILD_ID || TROPHY_FRAG_VERSION}`)
             .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
             .then((data) => {
             for (const file of TROPHY_FILES) {
@@ -240,7 +243,7 @@ function prefetchTrophies() {
                 trophyFragData.set(file, entry);
                 const image = new Image();
                 image.decoding = "async";
-                image.src = `./assets/trophy/${entry.png}?v=${TROPHY_FRAG_VERSION}`;
+                image.src = `./assets/trophy/${entry.png}?v=${BUILD_ID || TROPHY_FRAG_VERSION}`;
                 trophyFragImages.set(file, image);
             }
         })
@@ -783,6 +786,43 @@ function setLive(ok) {
     els.liveDot.classList.toggle("live-ok", ok);
     els.liveDot.classList.toggle("live-fail", !ok);
 }
+/**
+ * 새 배포 자동 반영: GitHub Pages는 HTML을 최대 10분간 캐시해, 배포 직후에도 예전 화면이 계속 보일 수 있다.
+ * build.json의 배포 식별값이 이 화면의 것과 다르면 새로고침한다(부스 화면을 계속 띄워 둬도 새 디자인이 반영되게).
+ * 새 HTML이 아직 퍼지지 않아 같은 화면이 다시 뜨는 경우를 대비해, 같은 배포로는 최대 3번까지만 새로고침한다.
+ */
+function initAutoUpdate() {
+    if (!BUILD_ID)
+        return;
+    const check = async () => {
+        try {
+            const res = await fetch(`./assets/build.json?t=${Date.now()}`, { cache: "no-store" });
+            if (!res.ok)
+                return;
+            const data = await res.json();
+            const build = data?.build;
+            if (typeof build !== "string" || !build || build === BUILD_ID)
+                return;
+            if (rendering || podiumAnimating)
+                return; // 연출 도중이면 다음 확인 때
+            const key = `hamsterRanking_reload_${build}`;
+            const tries = Number(sessionStorage.getItem(key) ?? 0);
+            if (tries >= 3)
+                return;
+            sessionStorage.setItem(key, String(tries + 1));
+            location.reload();
+        }
+        catch {
+            // 네트워크·저장소 오류는 다음 확인 때 다시
+        }
+    };
+    setTimeout(() => void check(), 3000);
+    setInterval(() => void check(), 60000);
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible")
+            void check();
+    });
+}
 function startPolling() {
     fetchRemote();
     setInterval(fetchRemote, POLL_INTERVAL_MS);
@@ -913,4 +953,5 @@ initPodiumPreviewKeys();
 initOutro();
 initLanding();
 startPolling();
+initAutoUpdate();
 //# sourceMappingURL=ranking.js.map
