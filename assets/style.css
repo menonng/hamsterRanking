@@ -461,10 +461,14 @@ section.card {
   filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.22));
 }
 .podium-card.trophy .podium-num {
+  /* 두 칸 굵기 겹침·그림자가 오른쪽 아래로 붙어 숫자 덩어리가 치우쳐 보이므로, 그만큼 되돌려 트로피 중심에 맞춘다
+     (--nx: 가로 보정, "1"은 글자 모양 자체도 오른쪽으로 쏠려 더 당긴다) */
+  --nx: -0.045em;
+  --ny: -0.03em;
   position: absolute;
   left: 50%;
   top: 30%;
-  transform: translate(-50%, -50%);
+  transform: translate(calc(-50% + var(--nx)), calc(-50% + var(--ny)));
   font-family: "Unifont Digits", var(--font-mono);
   font-weight: 400;
   font-size: calc(var(--th) * 0.26);
@@ -478,7 +482,11 @@ section.card {
     0.125em 0.0625em 0 rgba(58, 28, 4, 0.92);
 }
 /* 픽셀 트로피: 숫자의 한 칸이 트로피 한 칸의 절반이 되도록(트로피 26칸 높이 기준) 맞춘다 */
-.podium-card.trophy-pixel .podium-num { font-size: calc(var(--th) * 8 / 26); top: 34%; }
+.podium-card.trophy.rank-1 .podium-num { --nx: -0.08em; }
+/* 픽셀 트로피: 숫자의 한 칸이 트로피 한 칸의 절반, 세로는 컵(테두리 포함) 한가운데 */
+.podium-card.trophy-pixel .podium-num { font-size: calc(var(--th) * 8 / 26); top: 30%; }
+:root[data-theme="dark"] .podium-card.trophy .podium-num { --nx: -0.06em; --ny: -0.06em; }
+:root[data-theme="dark"] .podium-card.trophy.rank-1 .podium-num { --nx: -0.095em; }
 
 /* ---------- 4~10위 / 11위 이하 리스트 ---------- */
 
