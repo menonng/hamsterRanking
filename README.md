@@ -48,6 +48,12 @@ GitHub Pages는 HTML을 최대 10분간 캐시해, 배포 직후에도 예전 �
 `index.html`의 `<meta name="build-id">`와 `assets/build.json`에 같이 써 두고, 화면은 `build.json`을 열 때·1분마다·화면으로 돌아올 때 확인해
 값이 다르면 스스로 새로고침한다(연출 도중엔 기다리고, 같은 배포로는 최대 3번까지만). 트로피 그림·파편 데이터 주소에도 이 값을 붙인다.
 
+## 주소
+
+- 사이트: `https://menonng.github.io/hamsterRanking/` (HTTPS, QR코드는 이 주소로)
+- 짧은 주소: `hamcode.kro.kr` → 내도메인.한국의 리다이렉트 레코드로 위 주소로 넘겨준다.
+  GitHub Pages에는 커스텀 도메인을 설정하지 않는다(설정하면 github.io 주소가 HTTP인 커스텀 도메인으로 넘어가 버린다).
+
 ## GitHub Pages 배포
 
 `.github/workflows/deploy-pages.yml`이 **`claude/gracious-sagan-mzkdnd` 브랜치에** push될 때마다 저장소 루트를 GitHub Pages로 자동 배포합니다.
