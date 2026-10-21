@@ -1008,3 +1008,172 @@ details.settings summary {
 @media (hover: hover) and (pointer: fine) {
   :root[data-theme="dark"] .row:hover { background: var(--paper-3); }
 }
+
+/* 픽셀 한글 글꼴: Galmuri11(SIL OFL 1.1, © 2019–2025 Lee Minseo) 부분집합 — assets/fonts/Galmuri-OFL.txt.
+   OFL의 예약 글꼴 이름("Galmuri")은 수정본(부분집합)에 쓰지 않으므로 CSS에서는 다른 이름으로 부른다.
+   12px 격자로 그려진 글꼴이라 12·24·36px에서만 또렷하다. */
+@font-face { font-family: "HamsterPixel"; font-weight: 400; font-display: swap; src: url("./fonts/Galmuri11.subset.woff2") format("woff2"); }
+@font-face { font-family: "HamsterPixel"; font-weight: 700; font-display: swap; src: url("./fonts/Galmuri11-Bold.subset.woff2") format("woff2"); }
+
+/* =====================================================================
+   프로토타입 스킨 "nature" (?skin=nature): 인디 게임풍 픽셀 자연 배경 + 게임 UI 창 같은 패널
+   배경 그림은 Luis Zuno(@ansimuz) CC0 — assets/bg/LICENSE.txt
+   ===================================================================== */
+html.skin-nature {
+  --font-pixel: "HamsterPixel", var(--font-display);
+  --px: 4px;                 /* 패널 테두리 한 칸 */
+  --pn-line: #3B2412;        /* 패널 테두리 */
+  --pn-hi: rgba(255, 255, 255, 0.55); /* 패널 안쪽 위 하이라이트 */
+  --pn-lo: rgba(90, 60, 20, 0.18);    /* 패널 안쪽 아래 그림자 */
+  --card: #FFF6DF;
+  --paper-2: #F5E7C4;
+  --paper-3: #EAD6A6;
+  --ink: #2B1A0C;
+  --ink-dim: #6B5236;
+  --rule: #DCC796;
+  --neutral-badge: #EAD9B4;
+}
+html.skin-nature[data-theme="dark"] {
+  --pn-line: #E9DFFF;
+  --pn-hi: rgba(255, 255, 255, 0.10);
+  --pn-lo: rgba(0, 0, 0, 0.35);
+  --card: #10142E;
+  --paper-2: #1A2045;
+  --paper-3: #242B5A;
+  --ink: #F6F1FF;
+  --ink-dim: #CBC2EA;
+  --rule: #3A4175;
+  --hc-line: #E9DFFF;
+  --neutral-badge: #232852;
+}
+html.skin-nature,
+html.skin-nature body { background: transparent; }
+
+/* 배경 장면: 화면에 고정, 레이어마다 아래쪽에 붙여 가로로 반복 */
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.scene-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  will-change: transform;
+}
+.scene-layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+@keyframes sceneDrift { to { transform: translate3d(var(--tile), 0, 0); } }
+
+/* 게임 UI 창: 모서리가 한 칸 깎인 픽셀 테두리 + 안쪽 위 하이라이트 / 아래 그림자 + 아래로 떨어지는 그림자 */
+html.skin-nature header.top,
+html.skin-nature section.card,
+html.skin-nature .podium-card.trophy .podium-top,
+html.skin-nature .outro-frame,
+html.skin-nature .outro-comment {
+  border: none;
+  border-radius: 0;
+  background: var(--card);
+  box-shadow:
+    var(--px) 0 0 0 var(--pn-line),
+    calc(var(--px) * -1) 0 0 0 var(--pn-line),
+    0 var(--px) 0 0 var(--pn-line),
+    0 calc(var(--px) * -1) 0 0 var(--pn-line),
+    inset 0 var(--px) 0 0 var(--pn-hi),
+    inset 0 calc(var(--px) * -1) 0 0 var(--pn-lo),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 0 rgba(0, 0, 0, 0.28);
+}
+html.skin-nature header.top {
+  position: sticky;
+  margin: var(--px);
+  background: var(--card);
+}
+html.skin-nature main { padding-top: clamp(20px, 4vw, 44px); }
+
+/* 1~3위 정보 창: 윗줄 메달색 띠를 픽셀 칸 높이로 */
+html.skin-nature .podium-card.trophy .podium-top {
+  border-top: calc(var(--px) * 2) solid var(--accent);
+}
+html.skin-nature .podium-card.trophy .podium-step { margin-top: calc(var(--px) * 3); }
+
+/* 글꼴: 이름·제목·숫자·상태는 픽셀 글꼴(맨 아래 안내 문구는 지정된 굴림체 그대로) */
+html.skin-nature .card h2,
+html.skin-nature .podium-name,
+html.skin-nature .podium-meta,
+html.skin-nature .podium-time,
+html.skin-nature .podium-gap,
+html.skin-nature .podium-tie,
+html.skin-nature .row-name,
+html.skin-nature .row-meta,
+html.skin-nature .row-time,
+html.skin-nature .row-gap,
+html.skin-nature .row-rank,
+html.skin-nature .status-pill,
+html.skin-nature .ai-badge,
+html.skin-nature .empty-state {
+  font-family: var(--font-pixel);
+  letter-spacing: 0;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+/* 크기는 12px 배수로만(픽셀 글꼴이 또렷하게 찍히는 크기) */
+html.skin-nature .card h2 { font-size: 12px; color: var(--ink); text-transform: none; }
+html.skin-nature .status-pill,
+html.skin-nature .ai-badge,
+html.skin-nature .podium-meta,
+html.skin-nature .podium-gap,
+html.skin-nature .podium-tie,
+html.skin-nature .row-meta,
+html.skin-nature .row-gap,
+html.skin-nature .row-rank { font-size: 12px; }
+html.skin-nature .podium-name,
+html.skin-nature .row-name,
+html.skin-nature .row-time { font-size: 24px; font-weight: 700; }
+html.skin-nature .podium-time { font-size: 24px; }
+html.skin-nature .podium-card.rank-1 .podium-time { font-size: 36px; }
+@media (max-width: 640px) {
+  html.skin-nature .podium-name,
+  html.skin-nature .podium-time,
+  html.skin-nature .podium-card.rank-1 .podium-time { font-size: 12px; }
+  html.skin-nature .podium-card.rank-1 .podium-name,
+  html.skin-nature .podium-card.rank-1 .podium-time,
+  html.skin-nature .row-name,
+  html.skin-nature .row-time { font-size: 24px; }
+}
+
+/* 둥근 요소 → 각진 픽셀 요소 */
+html.skin-nature .h2-icon,
+html.skin-nature .status-pill,
+html.skin-nature .ai-badge,
+html.skin-nature .podium-tie,
+html.skin-nature .toggle-track,
+html.skin-nature .toggle-thumb { border-radius: 0; }
+html.skin-nature .row-rank {
+  border-radius: 0;
+  box-shadow: 0 0 0 2px var(--pn-line);
+}
+html.skin-nature .row { border-radius: 0; border-bottom: 2px dashed var(--rule); }
+html.skin-nature .status-pill { border: 2px solid var(--pn-line); background: var(--card); color: var(--ink); }
+
+/* 맨 아래: 사진 액자와 안내 문구도 창으로 */
+html.skin-nature .outro-frame { padding: calc(var(--px) * 3); box-sizing: border-box; }
+html.skin-nature .outro-comment { padding: 14px 20px; color: var(--ink); }
+html.skin-nature[data-theme="dark"] .outro-comment { color: var(--ink); }
+
+/* 저사양·모션 감소: 배경은 그대로 두되 움직임은 끈다 */
+html.lite .scene-layer,
+html.lite .scene-wrap { animation: none !important; transform: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .scene-layer, .scene-wrap { animation: none !important; transform: none !important; }
+}

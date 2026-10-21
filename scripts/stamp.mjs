@@ -8,9 +8,10 @@ const hash = (file) => createHash("sha1").update(readFileSync(file)).digest("hex
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 
 const entryPath = `assets/${entry}.js`;
+// 진입 파일이 import하는 ./xxx.js 모듈마다 내용 해시를 붙인다(common.js, scene.js 등).
 const js = readFileSync(entryPath, "utf8").replace(
-  /(from\s+["']\.\/common\.js)(\?v=\w+)?(["'])/g,
-  `$1?v=${hash("assets/common.js")}$3`,
+  /(from\s+["']\.\/([\w-]+)\.js)(\?v=\w+)?(["'])/g,
+  (_, head, name, _v, quote) => `${head}?v=${hash(`assets/${name}.js`)}${quote}`,
 );
 writeFileSync(entryPath, js);
 
@@ -20,12 +21,13 @@ for (const file of ["assets/style.css", entryPath]) {
 }
 // 배포 식별값(build id): 화면 코드·스타일·트로피 그림이 바뀌면 달라진다. HTML의 <meta name="build-id">와
 // assets/build.json에 같이 써 두면, 열려 있는 화면이 build.json을 주기적으로 확인해 새 배포를 알아채고 새로고침한다.
-const trophyFiles = ["assets/trophy", "assets/trophy/pixel"]
+const trophyFiles = ["assets/trophy", "assets/trophy/pixel", "assets/bg", "assets/bg/day", "assets/bg/night"]
   .filter((dir) => existsSync(dir))
   .flatMap((dir) => readdirSync(dir).filter((f) => /\.(svg|png|json)$/.test(f)).map((f) => `${dir}/${f}`))
   .sort();
 const build = createHash("sha1");
-for (const file of ["assets/style.css", entryPath, "assets/common.js", ...trophyFiles]) {
+const modules = readdirSync("assets").filter((f) => f.endsWith(".js")).map((f) => `assets/${f}`).sort();
+for (const file of ["assets/style.css", ...modules, ...trophyFiles]) {
   if (existsSync(file)) build.update(readFileSync(file));
 }
 const buildId = build.digest("hex").slice(0, 10);
