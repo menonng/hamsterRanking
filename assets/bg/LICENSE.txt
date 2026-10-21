@@ -1,0 +1,66 @@
+Background art in assets/bg/
+============================
+
+All artwork in this folder was created by Luis Zuno (@ansimuz) - https://ansimuz.com
+and released under CC0 1.0 (public domain dedication):
+https://creativecommons.org/publicdomain/zero/1.0/
+Attribution is not required, but credit is given here with thanks.
+
+The files are 1:1 pixel copies of the original layers. They were re-cut by
+scripts/bg_assets.py (split/padded to a common height, moon and tree separated
+into sprites, losslessly re-encoded). No pixels were scaled or recoloured,
+except the small patch of night sky behind the moon, which was repainted with
+the sky's own two colours.
+
+
+day/  - "Country side platformer" (ansimuz), file set country-platform-files/layers
+-----------------------------------------------------------------------------------
+  d0.png  <- country-platform-back.png
+  d1.png  <- country-platform-forest.png
+  d2.png  <- big tree, cut out of country-platform-tiles-example.png
+  d3.png  <- grass strip, one 128 px period of country-platform-tiles-example.png
+
+  Taken from: https://github.com/Zedrinth/ProgDenGroup6Game
+              commit edba23566241041cdf260015d39f2838c6f1ad6f
+              path   Assets/Legacy Collection/Environments/country-platform-files/layers/
+  That copy carries no license file. The license text for this pack, as shipped
+  by ansimuz, was read from the copy in https://github.com/ModusCreateOrg/genus
+  (commit 3f4c72a979eebad93a24fd4a02db5d5bd98d9cc7,
+   resources/backgrounds/countryside/license.txt):
+
+  > Artwork created by Luis Zuno (@ansimuz)
+  >
+  > License for Everyone. This piece is under a CC0 License:
+  >
+  > You can copy, modify, distribute and perform the work, even for commercial
+  > purposes, all without asking permission.
+  >
+  > Thank you for your support at https://www.patreon.com/ansimuz
+
+
+night/ - "Mountain Dusk" (ansimuz), version A, file set Mountain Dusk/version A/Layers
+-------------------------------------------------------------------------------------
+  n0.png  <- sky.png (moon removed, stars kept)
+  n1.png  <- moon, cut out of sky.png
+  n2.png  <- far-clouds.png
+  n3.png  <- near-clouds.png
+  n4.png  <- far-mountains.png
+  n5.png  <- mountains.png
+  n6.png  <- trees.png
+
+  Taken from: https://github.com/Zedrinth/ProgDenGroup6Game
+              commit edba23566241041cdf260015d39f2838c6f1ad6f
+              path   Assets/Legacy Collection/Environments/Mountain Dusk/version A/Layers/
+  The Mountain Dusk package ships public-license.pdf (in its "Version C/layers"
+  folder of the same package; the same text is in godotengine/godot-demo-projects
+  commit b761b4cd5718a7118f2c95eb55f181d0a5f004f1,
+  misc/hdr_output/output_max_linear_value/Super Mountain Dusk/public-license.txt):
+
+  > License
+  >
+  > All assets included in this package are licensed under the Creative Commons
+  > Zero (CC0) license, which means you can use them freely in any project,
+  > whether personal or commercial, without the need for attribution. There are
+  > no restrictions on use, modification, or redistribution of these assets.
+  >
+  > Luis Zuno aka Ansimuz

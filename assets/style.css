@@ -1077,9 +1077,9 @@ html.skin-nature body { background: transparent; }
 @keyframes sceneDrift { to { transform: translate3d(var(--tile), 0, 0); } }
 
 /* 게임 UI 창: 모서리가 한 칸 깎인 픽셀 테두리 + 안쪽 위 하이라이트 / 아래 그림자 + 아래로 떨어지는 그림자 */
-html.skin-nature header.top,
-html.skin-nature section.card,
-html.skin-nature .podium-card.trophy .podium-top,
+html.skin-nature[data-theme] header.top,
+html.skin-nature[data-theme] section.card,
+html.skin-nature[data-theme] .podium-card.trophy .podium-top,
 html.skin-nature .outro-frame,
 html.skin-nature .outro-comment {
   border: none;
@@ -1102,7 +1102,8 @@ html.skin-nature header.top {
 html.skin-nature main { padding-top: clamp(20px, 4vw, 44px); }
 
 /* 1~3위 정보 창: 윗줄 메달색 띠를 픽셀 칸 높이로 */
-html.skin-nature .podium-card.trophy .podium-top {
+html.skin-nature[data-theme] .podium-card.trophy .podium-top {
+  border: none;
   border-top: calc(var(--px) * 2) solid var(--accent);
 }
 html.skin-nature .podium-card.trophy .podium-step { margin-top: calc(var(--px) * 3); }
@@ -1142,6 +1143,7 @@ html.skin-nature .row-name,
 html.skin-nature .row-time { font-size: 24px; font-weight: 700; }
 html.skin-nature .podium-time { font-size: 24px; }
 html.skin-nature .podium-card.rank-1 .podium-time { font-size: 36px; }
+/* 휴대폰은 기기 픽셀이 2~3배라 18px도 12px 격자의 정수배로 찍혀 또렷하다 */
 @media (max-width: 640px) {
   html.skin-nature .podium-name,
   html.skin-nature .podium-time,
@@ -1149,7 +1151,7 @@ html.skin-nature .podium-card.rank-1 .podium-time { font-size: 36px; }
   html.skin-nature .podium-card.rank-1 .podium-name,
   html.skin-nature .podium-card.rank-1 .podium-time,
   html.skin-nature .row-name,
-  html.skin-nature .row-time { font-size: 24px; }
+  html.skin-nature .row-time { font-size: 18px; }
 }
 
 /* 둥근 요소 → 각진 픽셀 요소 */
@@ -1164,7 +1166,8 @@ html.skin-nature .row-rank {
   box-shadow: 0 0 0 2px var(--pn-line);
 }
 html.skin-nature .row { border-radius: 0; border-bottom: 2px dashed var(--rule); }
-html.skin-nature .status-pill { border: 2px solid var(--pn-line); background: var(--card); color: var(--ink); }
+html.skin-nature[data-theme] .status-pill { border: 2px solid var(--pn-line); background: var(--card); color: var(--ink); }
+html.skin-nature[data-theme] .row-rank { border: none; }
 
 /* 맨 아래: 사진 액자와 안내 문구도 창으로 */
 html.skin-nature .outro-frame { padding: calc(var(--px) * 3); box-sizing: border-box; }
@@ -1177,3 +1180,5 @@ html.lite .scene-wrap { animation: none !important; transform: none !important; 
 @media (prefers-reduced-motion: reduce) {
   .scene-layer, .scene-wrap { animation: none !important; transform: none !important; }
 }
+/* 11위 이하 기록: 연한 중립색이 밝은 창 위에서 흐려 보이므로 본문 보조색으로 */
+html.skin-nature #restGroups .row-time { color: var(--ink-dim); }
