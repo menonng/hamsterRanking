@@ -239,8 +239,11 @@ header.top h1 {
   transform: translateX(0);
   transition: transform var(--dur-short) var(--ease-out);
 }
-html[data-theme="dark"] .toggle-track { background: var(--color-accent-2); border-color: transparent; }
-html[data-theme="dark"] .toggle-thumb { transform: translateX(17px); }
+html[data-theme="dark"] #themeToggle .toggle-track { background: var(--color-accent-2); border-color: transparent; }
+html[data-theme="dark"] #themeToggle .toggle-thumb { transform: translateX(17px); }
+/* 스킨 스위치: 켜지면 초록 트랙 + 손잡이 오른쪽 */
+.skin-toggle[aria-pressed="true"] .toggle-track { background: #55BB44; border-color: transparent; }
+.skin-toggle[aria-pressed="true"] .toggle-thumb { transform: translateX(17px); }
 
 .live-dot {
   position: relative;
@@ -1003,7 +1006,8 @@ details.settings summary {
 :root[data-theme="dark"] .row-rank { box-sizing: border-box; border: 2px solid var(--hc-line); }
 :root[data-theme="dark"] .row-time { color: #fff; }   /* 파랑·보라 같은 어두운 팔레트색은 검정 위 글자로 대비가 부족해 흰색으로 */
 :root[data-theme="dark"] .ai-badge { background: #000; color: var(--color-accent-2); border: 1px solid var(--color-accent-2); }
-:root[data-theme="dark"] .toggle-track { background: #FFCC11; border: 1px solid #FFCC11; }
+:root[data-theme="dark"] #themeToggle .toggle-track { background: #FFCC11; border: 1px solid #FFCC11; }
+:root[data-theme="dark"] .skin-toggle[aria-pressed="true"] .toggle-track { background: #55BB44; border: 1px solid #55BB44; }
 :root[data-theme="dark"] .toggle-thumb { background: #000; }
 @media (hover: hover) and (pointer: fine) {
   :root[data-theme="dark"] .row:hover { background: var(--paper-3); }
@@ -1016,7 +1020,7 @@ details.settings summary {
 @font-face { font-family: "HamsterPixel"; font-weight: 700; font-display: swap; src: url("./fonts/Galmuri11-Bold.subset.woff2") format("woff2"); }
 
 /* =====================================================================
-   프로토타입 스킨 "nature" (?skin=nature): 인디 게임풍 픽셀 자연 배경 + 게임 UI 창 같은 패널
+   스킨 "nature" (상단바 🌲 스위치, 또는 ?skin=nature / ?skin=off): 인디 게임풍 픽셀 자연 배경 + 게임 UI 창 같은 패널
    배경 그림은 Luis Zuno(@ansimuz) CC0 — assets/bg/LICENSE.txt
    ===================================================================== */
 html.skin-nature {

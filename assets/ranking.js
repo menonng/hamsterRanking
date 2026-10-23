@@ -1,6 +1,6 @@
 // 공개 랭킹 화면 — GitHub Pages로 열람하는 모든 사람이 보는 읽기 전용 화면.
 import { formatGap, formatTime, isAIRecord, normalizeRecords, sortRecords } from "./common.js?v=495fa8ccd8";
-import { initNatureScene } from "./scene.js?v=0c5dd3345d";
+import { initNatureScene } from "./scene.js?v=5aa297e0a9";
 // GitHub Pages 자체 배포(빌드+CDN 전파)는 최악의 경우 1분 이상 걸릴 수 있어, 배포를
 // 기다리지 않고 커밋 직후 거의 바로 갱신되는 raw.githubusercontent.com을 우선 사용한다.
 const GH_OWNER = "menonng";
