@@ -7,18 +7,18 @@ export const STORAGE_KEYS = {
     fileHandleFlag: "hamsterRanking_fs_linked",
 };
 export const BROADCAST_CHANNEL_NAME = "hamster-ranking-sync";
-/** 학교,이름,기록(초),태그[,학년,나이] 형식의 한 줄을 파싱한다. 학년·나이는 선택(뒤에 덧붙임, 생략 가능). */
+/** 학교,학년,나이,이름,기록(초),태그 형식의 한 줄을 파싱한다. 이름·기록만 필수, 나머지는 생략 가능(쉼표 자리는 유지). */
 export function parseRecordLine(line) {
     const trimmed = line.trim();
     if (!trimmed)
         return null;
     const parts = trimmed.split(",").map((s) => s.trim());
     const school = parts[0] ?? "";
-    const name = parts[1] ?? "";
-    const timeRaw = parts[2] ?? "";
-    const tag = parts[3] ?? "";
-    const grade = parts[4] ?? "";
-    const age = parts[5] ?? "";
+    const grade = parts[1] ?? "";
+    const age = parts[2] ?? "";
+    const name = parts[3] ?? "";
+    const timeRaw = parts[4] ?? "";
+    const tag = parts[5] ?? "";
     const time = Number(timeRaw);
     if (!name || !Number.isFinite(time) || time <= 0) {
         return null;
