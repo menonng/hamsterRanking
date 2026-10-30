@@ -6,6 +6,8 @@ export interface RankRecord {
   name: string;
   time: number; // 기록 (초), 낮을수록 상위 랭크
   tag: string; // "1" = 인공지능, "2" = 가명(사람이지만 마스킹하지 않음), 그 외("0", "") = 사람(마스킹함)
+  grade: string; // 학년 (선택, 빈 문자열 허용). 공개 여부는 랭킹 사이트 쪽 설정(SHOW_GRADE)으로 결정
+  age: string; // 나이 (선택, 빈 문자열 허용). 공개 여부는 랭킹 사이트 쪽 설정(SHOW_AGE)으로 결정
   createdAt: string; // ISO timestamp, 동시간 기록의 동점 처리 기준
 }
 
@@ -23,7 +25,7 @@ export type SyncMessage =
   | { type: "records"; records: RankRecord[] }
   | { type: "ping" };
 
-/** 학교,이름,기록(초),태그 형식의 한 줄을 파싱한다. */
+/** 학교,이름,기록(초),태그[,학년,나이] 형식의 한 줄을 파싱한다. 학년·나이는 선택(뒤에 덧붙임, 생략 가능). */
 export function parseRecordLine(line: string): Omit<RankRecord, "id" | "createdAt"> | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
@@ -33,13 +35,15 @@ export function parseRecordLine(line: string): Omit<RankRecord, "id" | "createdA
   const name = parts[1] ?? "";
   const timeRaw = parts[2] ?? "";
   const tag = parts[3] ?? "";
+  const grade = parts[4] ?? "";
+  const age = parts[5] ?? "";
 
   const time = Number(timeRaw);
   if (!name || !Number.isFinite(time) || time <= 0) {
     return null;
   }
 
-  return { school, name, time, tag };
+  return { school, name, time, tag, grade, age };
 }
 
 export function isAIRecord(record: Pick<RankRecord, "tag">): boolean {
@@ -74,6 +78,8 @@ export function normalizeRecord(raw: unknown): RankRecord | null {
     name,
     time,
     tag: String(r.tag ?? "").trim(),
+    grade: String(r.grade ?? "").trim(),
+    age: String(r.age ?? "").trim(),
     createdAt: String(r.createdAt ?? ""),
   };
   return { ...record, name: maskHumanName(record) };
@@ -147,12 +153,12 @@ export function saveLocalRecords(records: RankRecord[]): void {
 }
 
 export function toTxtLine(r: RankRecord): string {
-  const tagLabel = isAIRecord(r) ? "AI" : "사람";
-  return `${r.createdAt} | ${r.school} | ${r.name} | ${formatTime(r.time)} | ${tagLabel}`;
+  const tagLabel = isAIRecord(r) ? "AI" : isPseudonymRecord(r) ? "가명" : "사람";
+  return `${r.createdAt} | ${r.school} | ${r.grade} | ${r.age} | ${r.name} | ${formatTime(r.time)} | ${tagLabel}`;
 }
 
 export function recordsToTxt(records: RankRecord[]): string {
-  const header = "# 시각 | 학교 | 이름 | 기록 | 구분";
+  const header = "# 시각 | 학교 | 학년 | 나이 | 이름 | 기록 | 구분";
   const lines = [...records]
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .map(toTxtLine);

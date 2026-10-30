@@ -112,8 +112,21 @@ function aiBadge(r: RankRecord): string {
 }
 
 /** 학교가 비어 있으면(AI 등) 빈 줄이나 "-" 대신 아예 표시하지 않는다. */
+// 학년·나이 공개 여부. 학생 개인정보라 기본은 비공개. 운영자가 요청하면 이 값만 true로 바꿔 다시 배포한다.
+const SHOW_GRADE = false;
+const SHOW_AGE = false;
+
+/** 숫자만이면 단위를 붙이고(2→"2학년"), 이미 글자가 섞여 있으면 그대로 둔다("2학년"→"2학년"). */
+function withUnit(value: string, unit: string): string {
+  const v = value.trim();
+  return /^\d+$/.test(v) ? `${v}${unit}` : v;
+}
+
 function metaLine(r: RankRecord): string {
-  return r.school.trim();
+  const parts = [r.school.trim()];
+  if (SHOW_GRADE && r.grade.trim()) parts.push(withUnit(r.grade, "학년"));
+  if (SHOW_AGE && r.age.trim()) parts.push(withUnit(r.age, "세"));
+  return parts.filter(Boolean).join(" · ");
 }
 
 /** 순위표의 한 자리: 기록 + 표시 순위(동점이면 같은 순위) + 공동 여부. */
@@ -901,7 +914,7 @@ async function fetchRemote(): Promise<void> {
   els.lastSync.textContent = new Date().toLocaleTimeString("ko-KR");
 
   const records = normalizeRecords(data);
-  const signature = JSON.stringify(sortRecords(records).map((r) => [r.id, r.name, r.school, r.time, r.tag]));
+  const signature = JSON.stringify(sortRecords(records).map((r) => [r.id, r.name, r.school, r.time, r.tag, r.grade, r.age]));
   if (signature === lastSignature) return; // 바뀐 게 없으면 다시 그리지 않는다
   lastSignature = signature;
   remoteRecords = records;

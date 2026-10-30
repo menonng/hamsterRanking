@@ -1,5 +1,5 @@
 // 공개 랭킹 화면 — GitHub Pages로 열람하는 모든 사람이 보는 읽기 전용 화면.
-import { formatGap, formatTime, isAIRecord, normalizeRecords, sortRecords } from "./common.js?v=b4ca95d807";
+import { formatGap, formatTime, isAIRecord, normalizeRecords, sortRecords } from "./common.js?v=1c4cbc2b9a";
 import { initNatureScene } from "./scene.js?v=5aa297e0a9";
 // GitHub Pages 자체 배포(빌드+CDN 전파)는 최악의 경우 1분 이상 걸릴 수 있어, 배포를
 // 기다리지 않고 커밋 직후 거의 바로 갱신되는 raw.githubusercontent.com을 우선 사용한다.
@@ -107,8 +107,21 @@ function aiBadge(r) {
         : "";
 }
 /** 학교가 비어 있으면(AI 등) 빈 줄이나 "-" 대신 아예 표시하지 않는다. */
+// 학년·나이 공개 여부. 학생 개인정보라 기본은 비공개. 운영자가 요청하면 이 값만 true로 바꿔 다시 배포한다.
+const SHOW_GRADE = false;
+const SHOW_AGE = false;
+/** 숫자만이면 단위를 붙이고(2→"2학년"), 이미 글자가 섞여 있으면 그대로 둔다("2학년"→"2학년"). */
+function withUnit(value, unit) {
+    const v = value.trim();
+    return /^\d+$/.test(v) ? `${v}${unit}` : v;
+}
 function metaLine(r) {
-    return r.school.trim();
+    const parts = [r.school.trim()];
+    if (SHOW_GRADE && r.grade.trim())
+        parts.push(withUnit(r.grade, "학년"));
+    if (SHOW_AGE && r.age.trim())
+        parts.push(withUnit(r.age, "세"));
+    return parts.filter(Boolean).join(" · ");
 }
 /** 동점자는 같은 순위(1, 2, 2, 4 …)로 매긴다. 정렬 순서(먼저 등록한 사람이 위)는 그대로. */
 function placeAll(sorted) {
@@ -776,7 +789,7 @@ async function fetchRemote() {
         return;
     els.lastSync.textContent = new Date().toLocaleTimeString("ko-KR");
     const records = normalizeRecords(data);
-    const signature = JSON.stringify(sortRecords(records).map((r) => [r.id, r.name, r.school, r.time, r.tag]));
+    const signature = JSON.stringify(sortRecords(records).map((r) => [r.id, r.name, r.school, r.time, r.tag, r.grade, r.age]));
     if (signature === lastSignature)
         return; // 바뀐 게 없으면 다시 그리지 않는다
     lastSignature = signature;
