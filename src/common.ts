@@ -5,7 +5,7 @@ export interface RankRecord {
   school: string;
   name: string;
   time: number; // 기록 (초), 낮을수록 상위 랭크
-  tag: string; // "1" = 인공지능, 그 외("0", "") = 사람
+  tag: string; // "1" = 인공지능, "2" = 가명(사람이지만 마스킹하지 않음), 그 외("0", "") = 사람(마스킹함)
   createdAt: string; // ISO timestamp, 동시간 기록의 동점 처리 기준
 }
 
@@ -46,9 +46,14 @@ export function isAIRecord(record: Pick<RankRecord, "tag">): boolean {
   return String(record.tag ?? "").trim() === "1";
 }
 
-/** 사람(비-AI) 기록은 이름 2번째 글자(인덱스 1)를 *로 가린다. 이미 가려진 이름에 다시 적용해도 결과가 같다. */
+/** 태그 "2" = 가명(관리자가 미리 실명이 아닌 이름으로 입력했다는 표시). 이 경우 마스킹하지 않는다. */
+export function isPseudonymRecord(record: Pick<RankRecord, "tag">): boolean {
+  return String(record.tag ?? "").trim() === "2";
+}
+
+/** 사람(비-AI, 비-가명) 기록은 이름 2번째 글자(인덱스 1)를 *로 가린다. 이미 가려진 이름에 다시 적용해도 결과가 같다. */
 export function maskHumanName(record: Pick<RankRecord, "name" | "tag">): string {
-  if (isAIRecord(record) || record.name.length < 2) return record.name;
+  if (isAIRecord(record) || isPseudonymRecord(record) || record.name.length < 2) return record.name;
   return record.name.slice(0, 1) + "*" + record.name.slice(2);
 }
 
